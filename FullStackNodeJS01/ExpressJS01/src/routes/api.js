@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, handleLogin, getUser, getAccount } = require('../controllers/apiController');
+const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -15,6 +15,8 @@ router.get('/', (req, res) => {
 // Khai báo các API cho việc Đăng ký, Đăng nhập và Lấy danh sách User
 router.post('/register', createUser);
 router.post('/login', handleLogin);
+router.post('/forgot-password', handleForgotPassword);
+router.post('/reset-password', handleResetPassword);
 
 router.use(auth);
 

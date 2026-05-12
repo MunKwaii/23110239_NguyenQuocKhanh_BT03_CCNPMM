@@ -9,6 +9,7 @@ import RegisterPage from './pages/register.jsx';
 import LoginPage from './pages/login.jsx';
 import UserPage from './pages/user.jsx';
 import HomePage from './pages/home.jsx';
+import ForgotPasswordPage from './pages/forgot-password.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
 import './styles/global.css';
 
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
   {
     path: "login",
     element: <LoginPage />,
+  },
+  {
+    path: "forgot-password",
+    element: <ForgotPasswordPage />,
   },
 ]);
 

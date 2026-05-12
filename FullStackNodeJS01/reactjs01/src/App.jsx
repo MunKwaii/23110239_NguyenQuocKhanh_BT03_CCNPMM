@@ -11,17 +11,22 @@ function App() {
   useEffect(() => {
     const fetchAccount = async () => {
       setAppLoading(true);
-      const res = await getAccountApi();
-      if (res && !res.message) {
-        setAuth({
-          isAuthenticated: true,
-          user: {
-            email: res.email,
-            name: res.name
-          }
-        })
+      try {
+        const res = await getAccountApi();
+        if (res && !res.message) {
+          setAuth({
+            isAuthenticated: true,
+            user: {
+              email: res.email,
+              name: res.name
+            }
+          })
+        }
+      } catch (error) {
+        console.log(">>> Error fetching account: ", error);
+      } finally {
+        setAppLoading(false);
       }
-      setAppLoading(false);
     }
     fetchAccount();
   }, []);

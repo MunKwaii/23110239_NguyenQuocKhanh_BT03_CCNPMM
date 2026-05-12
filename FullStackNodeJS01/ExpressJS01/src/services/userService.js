@@ -7,8 +7,10 @@ const createUserService = async (name, email, password) => {
         // Kiểm tra xem email đã tồn tại trong DB chưa
         const user = await User.findOne({ email });
         if (user) {
-            console.log(`User exist, chọn email khác: ${email}`);
-            return null;
+            return {
+                EC: 1,
+                EM: "Email đã tồn tại, vui lòng chọn email khác"
+            }
         }
 
         // Mã hóa mật khẩu (hash password)
@@ -19,13 +21,19 @@ const createUserService = async (name, email, password) => {
             name: name,
             email: email,
             password: hashPassword,
-            role: "quản trị viên"
+            role: "USER"
         });
-        return result;
+        return {
+            EC: 0,
+            data: result
+        };
 
     } catch (error) {
         console.log(error);
-        return null;
+        return {
+            EC: -1,
+            EM: "Đã có lỗi xảy ra ở phía server"
+        };
     }
 }
 
@@ -70,7 +78,10 @@ const loginService = async (email, password) => {
         }
     } catch (error) {
         console.log(error);
-        return null;
+        return {
+            EC: -1,
+            EM: "Đã có lỗi xảy ra ở phía server"
+        };
     }
 }
 
@@ -85,9 +96,61 @@ const getUserService = async () => {
     }
 }
 
+const forgotPasswordService = async (email) => {
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return {
+                EC: 1,
+                EM: "Email không tồn tại trong hệ thống"
+            }
+        }
+        // Trong thực tế, bạn sẽ gửi email chứa link reset password ở đây
+        // Ở đây chúng ta chỉ thông báo thành công
+        return {
+            EC: 0,
+            EM: "Xác nhận email thành công. Vui lòng đặt lại mật khẩu mới."
+        }
+    } catch (error) {
+        console.log(error);
+        return {
+            EC: -1,
+            EM: "Lỗi server"
+        }
+    }
+}
+
+const resetPasswordService = async (email, newPassword) => {
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return {
+                EC: 1,
+                EM: "Email không tồn tại"
+            }
+        }
+
+        const hashPassword = await bcrypt.hash(newPassword, 10);
+        await User.updateOne({ email }, { password: hashPassword });
+
+        return {
+            EC: 0,
+            EM: "Đổi mật khẩu thành công"
+        }
+    } catch (error) {
+        console.log(error);
+        return {
+            EC: -1,
+            EM: "Lỗi server"
+        }
+    }
+}
+
 // Xuất các hàm ra để controller sử dụng
 module.exports = {
     createUserService,
     loginService,
-    getUserService
+    getUserService,
+    forgotPasswordService,
+    resetPasswordService
 }
