@@ -88,9 +88,11 @@ const HomePage = () => {
                     getProductsApi('best', 8),
                     getProductsApi('promo', 4),
                 ]);
-                if (!n?.message) setNewProducts(n);
-                if (!b?.message) setBestSellers(b);
-                if (!p?.message) setPromoProducts(p);
+                // Handle both array (old) and {products, total} (new) response format
+                const extract = (res) => Array.isArray(res) ? res : (res?.products ?? []);
+                if (!n?.message) setNewProducts(extract(n));
+                if (!b?.message) setBestSellers(extract(b));
+                if (!p?.message) setPromoProducts(extract(p));
             } finally { setLoading(false); }
         };
         fetch();
@@ -170,6 +172,13 @@ const HomePage = () => {
                         <span style={S.logoText}>TechZone</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <button onClick={() => navigate('/search')}
+                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
+                        >
+                            🔍 Tìm kiếm
+                        </button>
                         <div style={S.userPill}>
                             <div style={S.avatar}>{(auth.user.name || auth.user.email || 'U').charAt(0).toUpperCase()}</div>
                             <div>

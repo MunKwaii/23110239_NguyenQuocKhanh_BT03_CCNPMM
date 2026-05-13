@@ -1,62 +1,52 @@
 import axios from "./axios.customize";
 
 const createUserApi = (name, email, password) => {
-    const URL_API = "/v1/api/register";
-    const data = { name, email, password };
-    return axios.post(URL_API, data);
-}
+    return axios.post("/v1/api/register", { name, email, password });
+};
 
 const loginApi = (email, password) => {
-    const URL_API = "/v1/api/login";
-    const data = { email, password };
-    return axios.post(URL_API, data);
-}
+    return axios.post("/v1/api/login", { email, password });
+};
 
 const forgotPasswordApi = (email) => {
-    const URL_API = "/v1/api/forgot-password";
-    const data = { email };
-    return axios.post(URL_API, data);
-}
+    return axios.post("/v1/api/forgot-password", { email });
+};
 
 const resetPasswordApi = (email, password) => {
-    const URL_API = "/v1/api/reset-password";
-    const data = { email, password };
-    return axios.post(URL_API, data);
-}
+    return axios.post("/v1/api/reset-password", { email, password });
+};
 
 const getUserApi = () => {
-    const URL_API = "/v1/api/user";
-    return axios.get(URL_API);
-}
+    return axios.get("/v1/api/user");
+};
 
 const getAccountApi = () => {
-    const URL_API = "/v1/api/account";
-    return axios.get(URL_API);
-}
+    return axios.get("/v1/api/account");
+};
 
-const getProductsApi = (filter, limit) => {
-    const URL_API = "/v1/api/products";
-    return axios.get(URL_API, {
-        params: {
-            filter,
-            limit
-        }
+/**
+ * Get products with optional filters
+ * @param {string} filter - preset filter: 'new' | 'best' | 'promo'
+ * @param {number} limit  - max results
+ * @param {object} params - { search, category, brand, minPrice, maxPrice, sortBy }
+ */
+const getProductsApi = (filter, limit, params = {}) => {
+    return axios.get("/v1/api/products", {
+        params: { filter, limit, ...params }
     });
-}
+};
 
 const getProductByIdApi = (id) => {
-    const URL_API = `/v1/api/products/${id}`;
-    return axios.get(URL_API);
-}
+    return axios.get(`/v1/api/products/${id}`);
+};
 
 const getSimilarProductsApi = (id, limit) => {
-    const URL_API = `/v1/api/products/${id}/similar`;
-    return axios.get(URL_API, {
-        params: {
-            limit
-        }
-    });
-}
+    return axios.get(`/v1/api/products/${id}/similar`, { params: { limit } });
+};
+
+const getFilterMetaApi = () => {
+    return axios.get("/v1/api/products/meta/filters");
+};
 
 export {
     createUserApi,
@@ -67,5 +57,6 @@ export {
     getProductByIdApi,
     getSimilarProductsApi,
     forgotPasswordApi,
-    resetPasswordApi
-}
+    resetPasswordApi,
+    getFilterMetaApi,
+};

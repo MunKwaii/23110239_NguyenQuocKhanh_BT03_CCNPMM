@@ -11,6 +11,7 @@ import UserPage from './pages/user.jsx';
 import HomePage from './pages/home.jsx';
 import ForgotPasswordPage from './pages/forgot-password.jsx';
 import ProductDetailPage from './pages/product-detail.jsx';
+import SearchPage from './pages/search.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
 import './styles/global.css';
 
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
       {
         path: "product/:id",
         element: <ProductDetailPage />,
+      },
+      {
+        path: "search",
+        element: <SearchPage />,
       },
     ],
   },
