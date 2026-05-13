@@ -12,10 +12,15 @@ const getProducts = async (req, res) => {
         if (filter === 'best') { query.isBestSeller = true; sort = { sold: -1 }; }
         if (filter === 'promo') { query.isPromotion = true; sort = { salePrice: 1 }; }
 
-        // --- Search ---
+        // --- Search (only add $or if there is a search term) ---
         if (search && search.trim()) {
             const regex = new RegExp(search.trim(), 'i');
-            query.$or = [{ name: regex }, { brand: regex }, { description: regex }, { tags: regex }];
+            query.$or = [
+                { name: regex },
+                { brand: regex },
+                { description: regex },
+                { tags: regex }
+            ];
         }
 
         // --- Filter by category ---
@@ -28,13 +33,32 @@ const getProducts = async (req, res) => {
             query.brand = new RegExp(`^${brand}$`, 'i');
         }
 
-        // --- Price range ---
+        // --- Price range (filter on effective price: salePrice if exists, else price) ---
         if (minPrice || maxPrice) {
-            query.$or = query.$or || undefined;
-            const priceField = { $exists: true };
-            query.price = {};
-            if (minPrice) query.price.$gte = parseInt(minPrice, 10);
-            if (maxPrice) query.price.$lte = parseInt(maxPrice, 10);
+            const min = minPrice ? parseInt(minPrice, 10) : null;
+            const max = maxPrice ? parseInt(maxPrice, 10) : null;
+
+            const priceCondition = {};
+            if (min !== null) priceCondition.$gte = min;
+            if (max !== null) priceCondition.$lte = max;
+
+            // Match if salePrice is in range, OR (no salePrice AND price is in range)
+            const priceOrConditions = [
+                { salePrice: priceCondition },
+                { salePrice: { $exists: false }, price: priceCondition },
+                { salePrice: null, price: priceCondition }
+            ];
+
+            // If $or already used for search, combine using $and
+            if (query.$or) {
+                query.$and = [
+                    { $or: query.$or },
+                    { $or: priceOrConditions }
+                ];
+                delete query.$or;
+            } else {
+                query.$or = priceOrConditions;
+            }
         }
 
         // --- Sort ---
@@ -49,6 +73,7 @@ const getProducts = async (req, res) => {
 
         return res.status(200).json({ products, total });
     } catch (error) {
+        console.error('getProducts error:', error);
         return res.status(500).json({ message: 'Failed to fetch products' });
     }
 };
