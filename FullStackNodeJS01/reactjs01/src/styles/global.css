@@ -6,3 +6,10 @@
     margin: 0;
     padding: 0;
 }
+
+/* Fallback grid layout if Tailwind styles fail to load */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+}

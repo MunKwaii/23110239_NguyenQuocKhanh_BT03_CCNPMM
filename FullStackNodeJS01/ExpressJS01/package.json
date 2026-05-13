@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "nodemon src/server.js"
+    "start": "nodemon src/server.js",
+    "seed:products": "node scripts/seed-products.js",
+    "seed:products:append": "node scripts/seed-products.js --append",
+    "seed:products:dry": "node scripts/seed-products.js --dry-run",
+    "check:products": "node scripts/check-products.js"
   },
   "keywords": [],
   "author": "",

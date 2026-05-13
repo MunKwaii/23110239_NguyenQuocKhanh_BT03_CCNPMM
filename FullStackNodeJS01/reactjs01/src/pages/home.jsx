@@ -1,10 +1,13 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../components/context/auth.context';
 import { useNavigate } from 'react-router-dom';
+import { getProductsApi } from '../util/api';
 
 const HomePage = () => {
     const { auth, setAuth } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [newProducts, setNewProducts] = useState([]);
+    const [bestSellers, setBestSellers] = useState([]);
 
     const handleLogout = () => {
         localStorage.removeItem("access_token");
@@ -20,6 +23,40 @@ const HomePage = () => {
     };
 
     const isMember = auth.isAuthenticated && (auth.user.role || "USER") === "USER";
+
+    useEffect(() => {
+        if (!isMember) return;
+
+        const fetchProducts = async () => {
+            const [newRes, bestRes] = await Promise.all([
+                getProductsApi('new', 8),
+                getProductsApi('best', 12)
+            ]);
+
+            if (!newRes?.message) {
+                setNewProducts(newRes);
+            }
+
+            if (!bestRes?.message) {
+                setBestSellers(bestRes);
+            }
+        };
+
+        fetchProducts();
+    }, [isMember]);
+
+    const formatPrice = (value) => {
+        if (!value && value !== 0) return '';
+        return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+    };
+
+    const formatSold = (value) => {
+        if (!value && value !== 0) return '0';
+        if (value >= 1000) return (value / 1000).toFixed(1).replace('.0', '') + 'k';
+        return value.toString();
+    };
+
+    const topWeekly = useMemo(() => bestSellers.slice(0, 3), [bestSellers]);
 
     if (!auth.isAuthenticated) {
         return (
@@ -62,20 +99,6 @@ const HomePage = () => {
             </div>
         );
     }
-
-    const newProducts = [
-        { id: 1, name: 'Sony WH-1000XM5', price: '8.490.000đ', image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 2, name: 'Apple AirPods Pro 2', price: '6.190.000đ', image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 3, name: 'Bose QuietComfort Ultra', price: '9.990.000đ', image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 4, name: 'Sennheiser Momentum 4', price: '7.990.000đ', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-    ];
-
-    const bestSellers = [
-        { id: 5, name: 'JBL Tune 770NC', price: '2.790.000đ', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800', sold: '1.9k' },
-        { id: 6, name: 'Beats Studio Pro', price: '7.490.000đ', image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=800', sold: '1.3k' },
-        { id: 7, name: 'Soundcore Space One', price: '2.190.000đ', image: 'https://images.unsplash.com/photo-1471478331149-c72f17e33c73?auto=format&fit=crop&q=80&w=800', sold: '1.1k' },
-        { id: 8, name: 'Sony LinkBuds S', price: '3.790.000đ', image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=800', sold: '950' },
-    ];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans">
@@ -139,6 +162,16 @@ const HomePage = () => {
                     <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-amber-100 dark:border-gray-700">
                         <h3 className="text-lg font-bold mb-2">Bán chạy tuần này</h3>
                         <p className="text-gray-600 dark:text-gray-300 mb-4">Top 3 tai nghe bán chạy kèm bảo hành 24 tháng.</p>
+                        <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200 mb-4">
+                            {topWeekly.map((item, index) => (
+                                <li key={item._id || item.name} className="flex items-center gap-2">
+                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-semibold">
+                                        {index + 1}
+                                    </span>
+                                    <span className="font-medium">{item.name}</span>
+                                </li>
+                            ))}
+                        </ul>
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
                             Bảo hành 24 tháng
                         </div>
@@ -173,12 +206,12 @@ const HomePage = () => {
                         </a>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {newProducts.map((product) => (
-                            <div key={product.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col">
+                            <div key={product._id || product.name} className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col">
                                 <div className="relative rounded-xl overflow-hidden mb-4 bg-gray-100 dark:bg-gray-700 aspect-square flex-shrink-0">
                                     <span className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">
-                                        {product.tag}
+                                        Mới
                                     </span>
                                     <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
@@ -189,13 +222,22 @@ const HomePage = () => {
                                 </div>
                                 <h3 className="text-lg font-bold mb-2 line-clamp-1">{product.name}</h3>
                                 <div className="mt-auto flex items-center justify-between">
-                                    <span className="text-xl font-black text-purple-600 dark:text-purple-400">{product.price}</span>
-                                    <button className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-colors">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                    <div className="flex flex-col">
+                                        <span className="text-xl font-black text-purple-600 dark:text-purple-400">
+                                            {formatPrice(product.salePrice || product.price)}
+                                        </span>
+                                        {product.salePrice && (
+                                            <span className="text-sm text-gray-400 line-through">
+                                                {formatPrice(product.price)}
+                                            </span>
+                                        )}
+                                    </div>
+                                     <button className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-colors">
+                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                     </button>
+                                 </div>
+                             </div>
+                         ))}
                     </div>
                 </div>
 
@@ -208,19 +250,21 @@ const HomePage = () => {
                         </h2>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {bestSellers.map((product) => (
-                            <div key={product.id} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-transparent hover:border-pink-200 dark:hover:border-pink-900 group">
+                            <div key={product._id || product.name} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-transparent hover:border-pink-200 dark:hover:border-pink-900 group">
                                 <div className="h-48 overflow-hidden relative">
                                     <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-gray-800 flex items-center gap-1 shadow">
                                         <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                        Đã bán {product.sold}
+                                        Đã bán {formatSold(product.sold)}
                                     </div>
                                 </div>
                                 <div className="p-5">
                                     <h3 className="text-lg font-bold mb-1 truncate">{product.name}</h3>
-                                    <p className="text-pink-600 dark:text-pink-400 font-extrabold text-xl mb-4">{product.price}</p>
+                                    <p className="text-pink-600 dark:text-pink-400 font-extrabold text-xl mb-4">
+                                        {formatPrice(product.salePrice || product.price)}
+                                    </p>
                                     <button className="w-full py-2.5 rounded-xl bg-gray-900 dark:bg-gray-700 text-white font-semibold group-hover:bg-pink-500 transition-colors">
                                         Thêm vào giỏ hàng
                                     </button>

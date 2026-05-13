@@ -34,11 +34,22 @@ const getAccountApi = () => {
     return axios.get(URL_API);
 }
 
+const getProductsApi = (filter, limit) => {
+    const URL_API = "/v1/api/products";
+    return axios.get(URL_API, {
+        params: {
+            filter,
+            limit
+        }
+    });
+}
+
 export {
     createUserApi,
     loginApi,
     getUserApi,
     getAccountApi,
+    getProductsApi,
     forgotPasswordApi,
     resetPasswordApi
 }
