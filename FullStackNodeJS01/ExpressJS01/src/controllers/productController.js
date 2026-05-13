@@ -31,7 +31,48 @@ const getProducts = async (req, res) => {
     }
 };
 
+const getProductById = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        return res.status(200).json(product);
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Failed to fetch product'
+        });
+    }
+};
+
+const getSimilarProducts = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '6', 10), 20);
+        const product = await Product.findById(req.params.id);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        let query = { _id: { $ne: product._id }, category: product.category };
+        let similar = await Product.find(query).sort({ sold: -1 }).limit(limit);
+
+        if (similar.length === 0 && product.tags?.length) {
+            query = { _id: { $ne: product._id }, tags: { $in: product.tags } };
+            similar = await Product.find(query).sort({ sold: -1 }).limit(limit);
+        }
+
+        return res.status(200).json(similar);
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Failed to fetch similar products'
+        });
+    }
+};
+
 module.exports = {
-    getProducts
+    getProducts,
+    getProductById,
+    getSimilarProducts
 };
 

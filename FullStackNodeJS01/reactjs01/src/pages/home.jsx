@@ -1,280 +1,324 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/context/auth.context';
 import { useNavigate } from 'react-router-dom';
 import { getProductsApi } from '../util/api';
 
+const formatPrice = (v) =>
+    v != null ? new Intl.NumberFormat('vi-VN').format(v) + 'đ' : '';
+
+const formatSold = (v) => {
+    if (!v && v !== 0) return '0';
+    return v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v);
+};
+
+/* ── Product Card ── */
+const ProductCard = ({ product, badge, badgeColor, onDetail, formatSold: fs }) => (
+    <div
+        onClick={onDetail}
+        style={{ cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', overflow: 'hidden', transition: 'transform .3s, box-shadow .3s' }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(139,92,246,.25)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+    >
+        <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', background: '#0f172a' }}>
+            <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .5s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            />
+            {badge && (
+                <span style={{ position: 'absolute', top: 12, left: 12, background: badgeColor, color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 999, letterSpacing: 1, textTransform: 'uppercase' }}>
+                    {badge}
+                </span>
+            )}
+        </div>
+        <div style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{product.brand}</span>
+                {fs && <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Đã bán {fs(product.sold)}</span>}
+            </div>
+            <p style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15, margin: '0 0 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <div style={{ color: '#fff', fontWeight: 800, fontSize: 17 }}>{formatPrice(product.salePrice || product.price)}</div>
+                    {product.salePrice && <div style={{ color: '#64748b', fontSize: 12, textDecoration: 'line-through' }}>{formatPrice(product.price)}</div>}
+                </div>
+                <button style={{ width: 38, height: 38, borderRadius: 10, background: '#7c3aed', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 300, transition: 'background .2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
+                    onClick={e => { e.stopPropagation(); onDetail(); }}
+                >+</button>
+            </div>
+        </div>
+    </div>
+);
+
+/* ── Section Header ── */
+const SectionHeader = ({ title, sub, accent }) => (
+    <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 28, fontWeight: 900, color: '#f8fafc', margin: 0, lineHeight: 1.2 }}>
+            <span style={{ borderBottom: `3px solid ${accent}`, paddingBottom: 4 }}>{title}</span>
+        </h2>
+        {sub && <p style={{ color: '#94a3b8', margin: '8px 0 0', fontSize: 14 }}>{sub}</p>}
+    </div>
+);
+
+/* ── Main Page ── */
 const HomePage = () => {
     const { auth, setAuth } = useContext(AuthContext);
     const navigate = useNavigate();
     const [newProducts, setNewProducts] = useState([]);
     const [bestSellers, setBestSellers] = useState([]);
+    const [promoProducts, setPromoProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const isMember = auth.isAuthenticated && (auth.user.role || 'USER') === 'USER';
 
     const handleLogout = () => {
-        localStorage.removeItem("access_token");
-        setAuth({
-            isAuthenticated: false,
-            user: {
-                email: "",
-                name: "",
-                role: ""
-            }
-        });
-        navigate("/login");
+        localStorage.removeItem('access_token');
+        setAuth({ isAuthenticated: false, user: { email: '', name: '', role: '' } });
+        navigate('/login');
     };
-
-    const isMember = auth.isAuthenticated && (auth.user.role || "USER") === "USER";
 
     useEffect(() => {
-        if (!isMember) return;
-
-        const fetchProducts = async () => {
-            const [newRes, bestRes] = await Promise.all([
-                getProductsApi('new', 8),
-                getProductsApi('best', 12)
-            ]);
-
-            if (!newRes?.message) {
-                setNewProducts(newRes);
-            }
-
-            if (!bestRes?.message) {
-                setBestSellers(bestRes);
-            }
+        if (!isMember) { setLoading(false); return; }
+        const fetch = async () => {
+            setLoading(true);
+            try {
+                const [n, b, p] = await Promise.all([
+                    getProductsApi('new', 8),
+                    getProductsApi('best', 8),
+                    getProductsApi('promo', 4),
+                ]);
+                if (!n?.message) setNewProducts(n);
+                if (!b?.message) setBestSellers(b);
+                if (!p?.message) setPromoProducts(p);
+            } finally { setLoading(false); }
         };
-
-        fetchProducts();
+        fetch();
     }, [isMember]);
 
-    const formatPrice = (value) => {
-        if (!value && value !== 0) return '';
-        return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+    const S = {
+        page: { minHeight: '100vh', background: '#0f172a', color: '#f1f5f9', fontFamily: "'Inter', system-ui, sans-serif" },
+        nav: { position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,23,42,.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #1e293b', padding: '0 24px' },
+        navInner: { maxWidth: 1280, margin: '0 auto', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+        logo: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' },
+        logoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg,#7c3aed,#ec4899)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 18 },
+        logoText: { fontSize: 20, fontWeight: 900, background: 'linear-gradient(90deg,#a78bfa,#f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
+        userPill: { display: 'flex', alignItems: 'center', gap: 10, background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '6px 14px' },
+        avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 },
+        logoutBtn: { background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'all .2s' },
+        main: { maxWidth: 1280, margin: '0 auto', padding: '40px 24px' },
+        hero: { position: 'relative', borderRadius: 24, overflow: 'hidden', marginBottom: 60, height: 440 },
+        heroBg: { position: 'absolute', inset: 0, backgroundImage: 'url(https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1800&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center' },
+        heroOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(15,23,42,.95) 0%,rgba(15,23,42,.6) 60%,transparent 100%)' },
+        heroContent: { position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 60px', maxWidth: 640 },
+        badge: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(124,58,237,.2)', border: '1px solid rgba(124,58,237,.4)', color: '#a78bfa', borderRadius: 999, padding: '4px 14px', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 20 },
+        heroTitle: { fontSize: 52, fontWeight: 900, lineHeight: 1.1, color: '#f8fafc', margin: '0 0 16px' },
+        heroSub: { color: '#94a3b8', fontSize: 17, lineHeight: 1.7, margin: '0 0 32px' },
+        heroBtns: { display: 'flex', gap: 12 },
+        heroBtn1: { background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 32px', fontWeight: 700, fontSize: 15, cursor: 'pointer', transition: 'transform .2s,box-shadow .2s' },
+        heroBtn2: { background: 'rgba(255,255,255,.08)', color: '#fff', border: '1px solid rgba(255,255,255,.15)', borderRadius: 12, padding: '14px 32px', fontWeight: 700, fontSize: 15, cursor: 'pointer' },
+        promoCards: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 64 },
+        promoCard: (g) => ({ background: `linear-gradient(135deg,${g})`, borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden', cursor: 'default' }),
+        promoTag: { background: 'rgba(255,255,255,.2)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1, display: 'inline-block', marginBottom: 14 },
+        promoTitle: { color: '#fff', fontWeight: 800, fontSize: 20, margin: '0 0 8px' },
+        promoDesc: { color: 'rgba(255,255,255,.75)', fontSize: 13, lineHeight: 1.6, margin: '0 0 16px' },
+        promoCode: { color: '#fff', fontFamily: 'monospace', fontWeight: 700, fontSize: 14, borderBottom: '2px dashed rgba(255,255,255,.4)', display: 'inline' },
+        memberCard: { background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', borderRadius: 20, padding: '32px 40px', marginBottom: 64, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 },
+        memberInfo: { color: '#fff' },
+        memberPills: { display: 'flex', gap: 10, flexWrap: 'wrap' },
+        memberPill: { background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', borderRadius: 999, padding: '6px 16px', fontSize: 13, fontWeight: 600 },
+        grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 20 },
+        section: { marginBottom: 64 },
     };
 
-    const formatSold = (value) => {
-        if (!value && value !== 0) return '0';
-        if (value >= 1000) return (value / 1000).toFixed(1).replace('.0', '') + 'k';
-        return value.toString();
-    };
-
-    const topWeekly = useMemo(() => bestSellers.slice(0, 3), [bestSellers]);
-
-    if (!auth.isAuthenticated) {
-        return (
-            <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="text-center p-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full transform transition-all hover:scale-105">
-                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-6">
-                        Chào mừng đến với TechZone
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-300 text-lg mb-8">
-                        Vui lòng đăng nhập để xem các ưu đãi đặc quyền, sản phẩm mới nhất và mua sắm thả ga!
-                    </p>
-                    <button 
-                        onClick={() => navigate('/login')}
-                        className="px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full font-bold text-lg shadow-lg hover:shadow-indigo-500/30 transition-all hover:-translate-y-1"
-                    >
-                        Đăng nhập ngay
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!isMember) {
-        return (
-            <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="text-center p-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full">
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
-                        Tài khoản chưa có quyền thành viên
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                        Vui lòng đăng nhập bằng tài khoản thành viên để xem trang chủ bán tai nghe và các ưu đãi đặc biệt.
-                    </p>
-                    <button
-                        onClick={handleLogout}
-                        className="px-6 py-3 rounded-full bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors"
-                    >
-                        Đăng xuất
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans">
-            {/* Header Dashboard Info */}
-            <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 p-6 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80">
-                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                        {auth.user.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold">Xin chào, {auth.user.name || auth.user.email}!</h2>
-                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Vai trò: {auth.user.role || "USER"}</p>
-                    </div>
-                </div>
-                <button 
-                    onClick={handleLogout}
-                    className="px-6 py-2 rounded-full border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-semibold transition-all duration-300"
-                >
-                    Đăng xuất
+    /* ── NOT AUTHENTICATED ── */
+    if (!auth.isAuthenticated) return (
+        <div style={{ ...S.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+            <div style={{ textAlign: 'center', background: '#1e293b', border: '1px solid #334155', borderRadius: 24, padding: '60px 50px', maxWidth: 480, width: '100%', margin: '0 20px' }}>
+                <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg,#7c3aed,#ec4899)', borderRadius: 20, margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>🎧</div>
+                <h1 style={{ fontSize: 36, fontWeight: 900, color: '#f8fafc', margin: '0 0 12px' }}>
+                    <span style={{ background: 'linear-gradient(90deg,#a78bfa,#f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>TechZone</span>
+                </h1>
+                <p style={{ color: '#94a3b8', fontSize: 16, lineHeight: 1.7, margin: '0 0 32px' }}>Khám phá bộ sưu tập tai nghe cao cấp dành riêng cho thành viên.</p>
+                <button onClick={() => navigate('/login')} style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', border: 'none', borderRadius: 14, padding: '16px 40px', fontWeight: 700, fontSize: 16, cursor: 'pointer', width: '100%' }}>
+                    Đăng nhập ngay →
                 </button>
             </div>
+        </div>
+    );
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    /* ── NOT MEMBER ── */
+    if (!isMember) return (
+        <div style={{ ...S.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+            <div style={{ textAlign: 'center', background: '#1e293b', border: '1px solid #334155', borderRadius: 24, padding: '60px 50px', maxWidth: 480, width: '100%', margin: '0 20px' }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>⚠️</div>
+                <h1 style={{ color: '#f8fafc', fontSize: 26, fontWeight: 800, margin: '0 0 12px' }}>Quyền truy cập bị từ chối</h1>
+                <p style={{ color: '#94a3b8', margin: '0 0 28px' }}>Tài khoản này chưa có quyền thành viên.</p>
+                <button onClick={handleLogout} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 32px', fontWeight: 700, cursor: 'pointer' }}>Đăng xuất</button>
+            </div>
+        </div>
+    );
 
-                {/* Hero / Promotional Banner */}
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-16 group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-900/90 to-indigo-900/80 z-10"></div>
-                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=2000" alt="Promo Banner" className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-700" />
-                    <div className="absolute inset-0 z-20 flex flex-col justify-center items-start p-10 md:p-20">
-                        <span className="inline-block px-4 py-1 rounded-full bg-pink-500 text-white text-sm font-bold uppercase tracking-wider mb-4 animate-bounce">
-                            Siêu Sale Cuối Tuần
-                        </span>
-                        <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
-                            Thế Giới Tai Nghe <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-yellow-400">Giảm Đến 50%</span>
-                        </h1>
-                        <p className="text-lg md:text-xl text-gray-200 max-w-2xl mb-8">
-                            Tận hưởng chất âm đỉnh cao với các dòng tai nghe chống ồn và true wireless. Ưu đãi độc quyền chỉ dành riêng cho thành viên!
-                        </p>
-                        <button className="px-8 py-4 bg-white text-purple-900 rounded-full font-bold text-lg hover:bg-purple-100 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all">
-                            Săn Deal Ngay
+    /* ── MAIN ── */
+    return (
+        <div style={S.page}>
+            {/* NAV */}
+            <nav style={S.nav}>
+                <div style={S.navInner}>
+                    <div style={S.logo} onClick={() => navigate('/')}>
+                        <div style={S.logoIcon}>🎧</div>
+                        <span style={S.logoText}>TechZone</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={S.userPill}>
+                            <div style={S.avatar}>{(auth.user.name || auth.user.email || 'U').charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 700 }}>{auth.user.name || 'Member'}</div>
+                                <div style={{ color: '#a78bfa', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{auth.user.role || 'USER'}</div>
+                            </div>
+                        </div>
+                        <button
+                            style={S.logoutBtn}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#f87171'; }}
+                            onClick={handleLogout}
+                        >
+                            Đăng xuất
                         </button>
                     </div>
                 </div>
+            </nav>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-purple-100 dark:border-gray-700">
-                        <h3 className="text-lg font-bold mb-2">Khuyến mãi thành viên</h3>
-                        <p className="text-gray-600 dark:text-gray-300 mb-4">Giảm thêm 10% cho tai nghe chống ồn và freeship toàn quốc.</p>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold">
-                            Mã: VIPAUDIO
+            <main style={S.main}>
+
+                {/* HERO */}
+                <div style={S.hero}>
+                    <div style={S.heroBg} />
+                    <div style={S.heroOverlay} />
+                    <div style={S.heroContent}>
+                        <div style={S.badge}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
+                            Thành viên độc quyền
                         </div>
-                    </div>
-                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-pink-100 dark:border-gray-700">
-                        <h3 className="text-lg font-bold mb-2">Ưu đãi mới nhất</h3>
-                        <p className="text-gray-600 dark:text-gray-300 mb-4">Đổi điểm lấy quà tặng: case tai nghe, túi chống sốc.</p>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-sm font-semibold">
-                            Hạn: 31/05
-                        </div>
-                    </div>
-                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-amber-100 dark:border-gray-700">
-                        <h3 className="text-lg font-bold mb-2">Bán chạy tuần này</h3>
-                        <p className="text-gray-600 dark:text-gray-300 mb-4">Top 3 tai nghe bán chạy kèm bảo hành 24 tháng.</p>
-                        <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200 mb-4">
-                            {topWeekly.map((item, index) => (
-                                <li key={item._id || item.name} className="flex items-center gap-2">
-                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-semibold">
-                                        {index + 1}
-                                    </span>
-                                    <span className="font-medium">{item.name}</span>
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
-                            Bảo hành 24 tháng
+                        <h1 style={S.heroTitle}>
+                            Định Nghĩa Lại<br />
+                            <span style={{ background: 'linear-gradient(90deg,#a78bfa,#f472b6,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                Âm Thanh Thực.
+                            </span>
+                        </h1>
+                        <p style={S.heroSub}>Khám phá thế giới tai nghe Hi-Res đỉnh cao. Ưu đãi giảm tới <strong style={{ color: '#f472b6' }}>50%</strong> dành riêng cho VIP Member.</p>
+                        <div style={S.heroBtns}>
+                            <button style={S.heroBtn1}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(124,58,237,.5)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                            >Khám phá ngay</button>
+                            <button style={S.heroBtn2}>Xem ưu đãi</button>
                         </div>
                     </div>
                 </div>
 
-                <div className="mb-16 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-8 shadow-xl">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                        <div>
-                            <h3 className="text-2xl font-bold mb-2">Thông tin thành viên</h3>
-                            <p className="text-purple-100">Email: {auth.user.email || "-"}</p>
-                            <p className="text-purple-100">Vai trò: {auth.user.role || "USER"}</p>
+                {/* PROMO BANNER CARDS */}
+                <div style={S.promoCards}>
+                    {[
+                        { g: '#7c3aed,#4f46e5', tag: 'HOT DEAL', title: 'Siêu Sale VIP', desc: 'Giảm thêm 10% cho mọi đơn hàng tai nghe Sony & Bose.', code: 'VIPSONY' },
+                        { g: '#0891b2,#0284c7', tag: 'NEW IN', title: 'Hàng Mới Về', desc: 'BST Apple AirPods Max màu mới – Freeship toàn quốc.', code: 'FREESHIP' },
+                        { g: '#d97706,#b45309', tag: 'POINTS', title: 'Điểm Thưởng X2', desc: 'Nhân đôi điểm tích lũy cho thành viên hạng Gold tháng này.', code: 'X2POINTS' },
+                    ].map((c, i) => (
+                        <div key={i} style={S.promoCard(c.g)}>
+                            <div style={{ position: 'absolute', right: -20, top: -20, width: 100, height: 100, background: 'rgba(255,255,255,.08)', borderRadius: '50%' }} />
+                            <span style={S.promoTag}>{c.tag}</span>
+                            <h3 style={S.promoTitle}>{c.title}</h3>
+                            <p style={S.promoDesc}>{c.desc}</p>
+                            <span style={S.promoCode}>{c.code}</span>
                         </div>
-                        <div className="flex flex-wrap gap-3">
-                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Tích điểm 2%</span>
-                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Ưu đãi sinh nhật</span>
-                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Hỗ trợ 24/7</span>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* New Arrivals Section */}
-                <div className="mb-16">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-bold relative inline-block">
-                            Sản Phẩm Mới Nhất
-                            <span className="absolute bottom-0 left-0 w-1/2 h-1 bg-purple-500 rounded-full"></span>
-                        </h2>
-                        <a href="#" className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-2 group transition-colors">
-                            Xem tất cả 
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                        </a>
+                {/* MEMBER INFO */}
+                <div style={S.memberCard}>
+                    <div style={S.memberInfo}>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Thông Tin Thành Viên</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 4 }}>{auth.user.name || auth.user.email}</div>
+                        <div style={{ color: 'rgba(255,255,255,.7)', fontSize: 14 }}>📧 {auth.user.email}</div>
+                        <div style={{ color: 'rgba(255,255,255,.7)', fontSize: 14, marginTop: 4 }}>🎖 Vai trò: <strong>{auth.user.role || 'USER'}</strong></div>
                     </div>
-                    
-                    <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {newProducts.map((product) => (
-                            <div key={product._id || product.name} className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col">
-                                <div className="relative rounded-xl overflow-hidden mb-4 bg-gray-100 dark:bg-gray-700 aspect-square flex-shrink-0">
-                                    <span className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">
-                                        Mới
-                                    </span>
-                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                                        <button className="bg-white text-gray-900 px-6 py-2 rounded-full font-semibold hover:bg-purple-500 hover:text-white transition-colors">
-                                            Xem chi tiết
-                                        </button>
-                                    </div>
-                                </div>
-                                <h3 className="text-lg font-bold mb-2 line-clamp-1">{product.name}</h3>
-                                <div className="mt-auto flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <span className="text-xl font-black text-purple-600 dark:text-purple-400">
-                                            {formatPrice(product.salePrice || product.price)}
-                                        </span>
-                                        {product.salePrice && (
-                                            <span className="text-sm text-gray-400 line-through">
-                                                {formatPrice(product.price)}
-                                            </span>
-                                        )}
-                                    </div>
-                                     <button className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-purple-500 hover:text-white transition-colors">
-                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                     </button>
-                                 </div>
-                             </div>
-                         ))}
-                    </div>
-                </div>
-
-                {/* Best Sellers Section */}
-                <div className="mb-16">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-bold relative inline-block">
-                            Bán Chạy Nhất
-                            <span className="absolute bottom-0 left-0 w-1/2 h-1 bg-pink-500 rounded-full"></span>
-                        </h2>
-                    </div>
-                    
-                    <div className="product-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {bestSellers.map((product) => (
-                            <div key={product._id || product.name} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-transparent hover:border-pink-200 dark:hover:border-pink-900 group">
-                                <div className="h-48 overflow-hidden relative">
-                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-gray-800 flex items-center gap-1 shadow">
-                                        <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                        Đã bán {formatSold(product.sold)}
-                                    </div>
-                                </div>
-                                <div className="p-5">
-                                    <h3 className="text-lg font-bold mb-1 truncate">{product.name}</h3>
-                                    <p className="text-pink-600 dark:text-pink-400 font-extrabold text-xl mb-4">
-                                        {formatPrice(product.salePrice || product.price)}
-                                    </p>
-                                    <button className="w-full py-2.5 rounded-xl bg-gray-900 dark:bg-gray-700 text-white font-semibold group-hover:bg-pink-500 transition-colors">
-                                        Thêm vào giỏ hàng
-                                    </button>
-                                </div>
-                            </div>
+                    <div style={S.memberPills}>
+                        {['Tích điểm 2%', 'Ưu đãi sinh nhật', 'Hỗ trợ 24/7', 'Freeship đơn > 500k'].map(t => (
+                            <span key={t} style={S.memberPill}>{t}</span>
                         ))}
                     </div>
                 </div>
 
-            </div>
+                {/* PROMO PRODUCTS */}
+                {promoProducts.length > 0 && (
+                    <div style={S.section}>
+                        <SectionHeader title="🔥 Ưu Đãi Khuyến Mãi" sub="Giá tốt nhất – Số lượng có hạn!" accent="#f472b6" />
+                        <div style={S.grid4}>
+                            {promoProducts.map(p => (
+                                <ProductCard key={p._id} product={p} badge="SALE" badgeColor="#e11d48" onDetail={() => navigate(`/product/${p._id}`)} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* NEW ARRIVALS */}
+                <div style={S.section}>
+                    <SectionHeader title="✨ Sản Phẩm Mới Nhất" sub="Cập nhật xu hướng âm thanh mới nhất" accent="#a78bfa" />
+                    {loading ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 20 }}>
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} style={{ background: '#1e293b', borderRadius: 16, overflow: 'hidden', border: '1px solid #334155' }}>
+                                    <div style={{ aspectRatio: '1/1', background: 'linear-gradient(90deg,#1e293b,#334155,#1e293b)', backgroundSize: '200%', animation: 'shimmer 1.5s infinite' }} />
+                                    <div style={{ padding: 16 }}>
+                                        <div style={{ height: 12, background: '#334155', borderRadius: 6, marginBottom: 8 }} />
+                                        <div style={{ height: 20, background: '#334155', borderRadius: 6, width: '70%' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : newProducts.length > 0 ? (
+                        <div style={S.grid4}>
+                            {newProducts.map(p => (
+                                <ProductCard key={p._id} product={p} badge="NEW" badgeColor="#0891b2" onDetail={() => navigate(`/product/${p._id}`)} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#64748b', padding: '60px 0', background: '#1e293b', borderRadius: 16, border: '1px solid #334155' }}>
+                            <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+                            <p style={{ margin: 0, fontSize: 16 }}>Chưa có sản phẩm mới</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* BEST SELLERS */}
+                <div style={S.section}>
+                    <SectionHeader title="🏆 Bán Chạy Nhất" sub="Được tin dùng bởi hàng nghìn khách hàng" accent="#f59e0b" />
+                    {loading ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 20 }}>
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} style={{ background: '#1e293b', borderRadius: 16, border: '1px solid #334155', height: 300 }} />
+                            ))}
+                        </div>
+                    ) : bestSellers.length > 0 ? (
+                        <div style={S.grid4}>
+                            {bestSellers.map(p => (
+                                <ProductCard key={p._id} product={p} badge="HOT" badgeColor="#d97706" onDetail={() => navigate(`/product/${p._id}`)} formatSold={formatSold} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#64748b', padding: '60px 0', background: '#1e293b', borderRadius: 16, border: '1px solid #334155' }}>
+                            <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
+                            <p style={{ margin: 0 }}>Chưa có dữ liệu bán chạy</p>
+                        </div>
+                    )}
+                </div>
+
+            </main>
+
+            {/* FOOTER */}
+            <footer style={{ borderTop: '1px solid #1e293b', padding: '32px 24px', textAlign: 'center', color: '#475569', fontSize: 14 }}>
+                <p style={{ margin: 0 }}>© 2026 <strong style={{ color: '#a78bfa' }}>TechZone Premium</strong> — Thế Giới Tai Nghe Đỉnh Cao</p>
+            </footer>
         </div>
     );
 };

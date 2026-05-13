@@ -6,6 +6,7 @@ const productSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     salePrice: { type: Number },
     image: { type: String, required: true },
+    images: { type: [String], default: [] },
     category: { type: String, default: 'headphones' },
     tags: { type: [String], default: [] },
     warrantyMonths: { type: Number, default: 24 },

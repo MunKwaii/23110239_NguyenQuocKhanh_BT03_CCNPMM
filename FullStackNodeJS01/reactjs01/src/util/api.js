@@ -44,12 +44,28 @@ const getProductsApi = (filter, limit) => {
     });
 }
 
+const getProductByIdApi = (id) => {
+    const URL_API = `/v1/api/products/${id}`;
+    return axios.get(URL_API);
+}
+
+const getSimilarProductsApi = (id, limit) => {
+    const URL_API = `/v1/api/products/${id}/similar`;
+    return axios.get(URL_API, {
+        params: {
+            limit
+        }
+    });
+}
+
 export {
     createUserApi,
     loginApi,
     getUserApi,
     getAccountApi,
     getProductsApi,
+    getProductByIdApi,
+    getSimilarProductsApi,
     forgotPasswordApi,
     resetPasswordApi
 }

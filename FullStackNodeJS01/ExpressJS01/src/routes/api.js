@@ -1,6 +1,6 @@
 const express = require('express');
 const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
-const { getProducts } = require('../controllers/productController');
+const { getProducts, getProductById, getSimilarProducts } = require('../controllers/productController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -24,6 +24,8 @@ router.use(auth);
 router.get('/user', getUser);
 router.get('/account', delay, getAccount);
 router.get('/products', getProducts);
+router.get('/products/:id', getProductById);
+router.get('/products/:id/similar', getSimilarProducts);
 
 
 module.exports = router;
