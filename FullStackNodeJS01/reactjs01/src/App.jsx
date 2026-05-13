@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './components/layout/layout/header';
 import { AuthContext } from './components/context/auth.context';
@@ -18,7 +18,8 @@ function App() {
             isAuthenticated: true,
             user: {
               email: res.email,
-              name: res.name
+              name: res.name,
+              role: res.role
             }
           })
         }
@@ -29,7 +30,7 @@ function App() {
       }
     }
     fetchAccount();
-  }, []);
+  }, [setAppLoading, setAuth]);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { AuthContext } from '../components/context/auth.context';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,16 +7,19 @@ const HomePage = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.clear("access_token");
+        localStorage.removeItem("access_token");
         setAuth({
             isAuthenticated: false,
             user: {
                 email: "",
-                name: ""
+                name: "",
+                role: ""
             }
         });
         navigate("/login");
     };
+
+    const isMember = auth.isAuthenticated && (auth.user.role || "USER") === "USER";
 
     if (!auth.isAuthenticated) {
         return (
@@ -39,18 +42,39 @@ const HomePage = () => {
         );
     }
 
+    if (!isMember) {
+        return (
+            <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="text-center p-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full">
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
+                        Tài khoản chưa có quyền thành viên
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Vui lòng đăng nhập bằng tài khoản thành viên để xem trang chủ bán tai nghe và các ưu đãi đặc biệt.
+                    </p>
+                    <button
+                        onClick={handleLogout}
+                        className="px-6 py-3 rounded-full bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors"
+                    >
+                        Đăng xuất
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const newProducts = [
-        { id: 1, name: 'MacBook Pro M3 Max', price: '79.990.000đ', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 2, name: 'iPhone 15 Pro Max', price: '34.990.000đ', image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 3, name: 'Sony WH-1000XM5', price: '8.490.000đ', image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
-        { id: 4, name: 'iPad Pro M4', price: '28.990.000đ', image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
+        { id: 1, name: 'Sony WH-1000XM5', price: '8.490.000đ', image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
+        { id: 2, name: 'Apple AirPods Pro 2', price: '6.190.000đ', image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
+        { id: 3, name: 'Bose QuietComfort Ultra', price: '9.990.000đ', image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
+        { id: 4, name: 'Sennheiser Momentum 4', price: '7.990.000đ', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800', tag: 'Mới' },
     ];
 
     const bestSellers = [
-        { id: 5, name: 'AirPods Pro 2', price: '6.190.000đ', image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=800', sold: '1.2k' },
-        { id: 6, name: 'Apple Watch Series 9', price: '10.490.000đ', image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?auto=format&fit=crop&q=80&w=800', sold: '980' },
-        { id: 7, name: 'Logitech MX Master 3S', price: '2.590.000đ', image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&q=80&w=800', sold: '850' },
-        { id: 8, name: 'Bàn phím cơ Keychron Q1', price: '4.290.000đ', image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=800', sold: '720' },
+        { id: 5, name: 'JBL Tune 770NC', price: '2.790.000đ', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800', sold: '1.9k' },
+        { id: 6, name: 'Beats Studio Pro', price: '7.490.000đ', image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=800', sold: '1.3k' },
+        { id: 7, name: 'Soundcore Space One', price: '2.190.000đ', image: 'https://images.unsplash.com/photo-1471478331149-c72f17e33c73?auto=format&fit=crop&q=80&w=800', sold: '1.1k' },
+        { id: 8, name: 'Sony LinkBuds S', price: '3.790.000đ', image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=800', sold: '950' },
     ];
 
     return (
@@ -63,7 +87,7 @@ const HomePage = () => {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold">Xin chào, {auth.user.name || auth.user.email}!</h2>
-                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Thành viên VIP</p>
+                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Vai trò: {auth.user.role || "USER"}</p>
                     </div>
                 </div>
                 <button 
@@ -75,25 +99,64 @@ const HomePage = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                
+
                 {/* Hero / Promotional Banner */}
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-16 group">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-900/90 to-indigo-900/80 z-10"></div>
-                    <img src="https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=2000" alt="Promo Banner" className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=2000" alt="Promo Banner" className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-700" />
                     <div className="absolute inset-0 z-20 flex flex-col justify-center items-start p-10 md:p-20">
                         <span className="inline-block px-4 py-1 rounded-full bg-pink-500 text-white text-sm font-bold uppercase tracking-wider mb-4 animate-bounce">
                             Siêu Sale Cuối Tuần
                         </span>
                         <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
-                            Công Nghệ Đỉnh Cao <br />
+                            Thế Giới Tai Nghe <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-yellow-400">Giảm Đến 50%</span>
                         </h1>
                         <p className="text-lg md:text-xl text-gray-200 max-w-2xl mb-8">
-                            Nâng cấp không gian làm việc của bạn với các thiết bị công nghệ hàng đầu. Ưu đãi độc quyền chỉ dành riêng cho thành viên VIP!
+                            Tận hưởng chất âm đỉnh cao với các dòng tai nghe chống ồn và true wireless. Ưu đãi độc quyền chỉ dành riêng cho thành viên!
                         </p>
                         <button className="px-8 py-4 bg-white text-purple-900 rounded-full font-bold text-lg hover:bg-purple-100 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all">
                             Săn Deal Ngay
                         </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-purple-100 dark:border-gray-700">
+                        <h3 className="text-lg font-bold mb-2">Khuyến mãi thành viên</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-4">Giảm thêm 10% cho tai nghe chống ồn và freeship toàn quốc.</p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold">
+                            Mã: VIPAUDIO
+                        </div>
+                    </div>
+                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-pink-100 dark:border-gray-700">
+                        <h3 className="text-lg font-bold mb-2">Ưu đãi mới nhất</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-4">Đổi điểm lấy quà tặng: case tai nghe, túi chống sốc.</p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-sm font-semibold">
+                            Hạn: 31/05
+                        </div>
+                    </div>
+                    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 border border-amber-100 dark:border-gray-700">
+                        <h3 className="text-lg font-bold mb-2">Bán chạy tuần này</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-4">Top 3 tai nghe bán chạy kèm bảo hành 24 tháng.</p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
+                            Bảo hành 24 tháng
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-16 rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-8 shadow-xl">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div>
+                            <h3 className="text-2xl font-bold mb-2">Thông tin thành viên</h3>
+                            <p className="text-purple-100">Email: {auth.user.email || "-"}</p>
+                            <p className="text-purple-100">Vai trò: {auth.user.role || "USER"}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Tích điểm 2%</span>
+                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Ưu đãi sinh nhật</span>
+                            <span className="px-4 py-2 rounded-full bg-white/20 text-sm font-semibold">Hỗ trợ 24/7</span>
+                        </div>
                     </div>
                 </div>
 

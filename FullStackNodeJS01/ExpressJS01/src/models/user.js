@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        default: "user"
+        default: "USER"
     }
 }, {
     timestamps: true // Tự động sinh ra 2 trường createdAt và updatedAt

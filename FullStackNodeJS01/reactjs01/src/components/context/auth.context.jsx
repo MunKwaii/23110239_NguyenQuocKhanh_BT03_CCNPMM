@@ -1,10 +1,12 @@
 import { createContext, useState } from 'react';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext({
     isAuthenticated: false,
     user: {
         email: "",
-        name: ""
+        name: "",
+        role: ""
     },
 });
 
@@ -13,7 +15,8 @@ export const AuthWrapper = (props) => {
         isAuthenticated: false,
         user: {
             email: "",
-            name: ""
+            name: "",
+            role: ""
         },
     });
 

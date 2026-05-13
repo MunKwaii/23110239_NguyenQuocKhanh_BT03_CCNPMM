@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Button, Col, Divider, Form, Input, notification, Row, Steps } from 'antd';
+import { useState } from 'react';
+import { Button, Col, Form, Input, notification, Row, Steps } from 'antd';
 import { forgotPasswordApi, resetPasswordApi } from '../util/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';

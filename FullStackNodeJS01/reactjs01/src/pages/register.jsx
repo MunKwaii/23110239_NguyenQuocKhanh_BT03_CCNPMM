@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, Col, Divider, Form, Input, notification, Row } from 'antd';
 import { createUserApi } from '../util/api';
 import { Link, useNavigate } from 'react-router-dom';

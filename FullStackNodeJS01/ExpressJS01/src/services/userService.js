@@ -53,7 +53,8 @@ const loginService = async (email, password) => {
                 // Tạo access token (JWT)
                 const payload = {
                     email: user.email,
-                    name: user.name
+                    name: user.name,
+                    role: user.role || "USER"
                 }
                 const access_token = jwt.sign(
                     payload,
@@ -66,7 +67,8 @@ const loginService = async (email, password) => {
                     access_token,
                     user: {
                         email: user.email,
-                        name: user.name
+                        name: user.name,
+                        role: user.role || "USER"
                     }
                 }
             }
