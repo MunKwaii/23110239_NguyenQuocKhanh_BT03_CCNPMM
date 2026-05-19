@@ -82,11 +82,26 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await Product.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { views: 1 } },
+            { new: true }
+        );
         if (!product) return res.status(404).json({ message: 'Product not found' });
         return res.status(200).json(product);
     } catch (error) {
         return res.status(500).json({ message: 'Failed to fetch product' });
+    }
+};
+
+const getTopProducts = async (req, res) => {
+    try {
+        const bestSellers = await Product.find().sort({ sold: -1 }).limit(10);
+        const mostViewed = await Product.find().sort({ views: -1 }).limit(10);
+        return res.status(200).json({ bestSellers, mostViewed });
+    } catch (error) {
+        console.error('getTopProducts error:', error);
+        return res.status(500).json({ message: 'Failed to fetch top products' });
     }
 };
 
@@ -119,4 +134,4 @@ const getFilterMeta = async (req, res) => {
     }
 };
 
-module.exports = { getProducts, getProductById, getSimilarProducts, getFilterMeta };
+module.exports = { getProducts, getProductById, getSimilarProducts, getFilterMeta, getTopProducts };

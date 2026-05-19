@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/context/auth.context';
 import { useNavigate } from 'react-router-dom';
-import { getProductsApi } from '../util/api';
+import { getProductsApi, getTopProductsApi } from '../util/api';
 
 const formatPrice = (v) =>
     v != null ? new Intl.NumberFormat('vi-VN').format(v) + 'đ' : '';
@@ -11,8 +11,13 @@ const formatSold = (v) => {
     return v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v);
 };
 
+const formatViews = (v) => {
+    if (!v && v !== 0) return '0';
+    return v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v);
+};
+
 /* ── Product Card ── */
-const ProductCard = ({ product, badge, badgeColor, onDetail, formatSold: fs }) => (
+const ProductCard = ({ product, badge, badgeColor, onDetail, formatSold: fs, formatViews: fv }) => (
     <div
         onClick={onDetail}
         style={{ cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', overflow: 'hidden', transition: 'transform .3s, box-shadow .3s' }}
@@ -34,6 +39,7 @@ const ProductCard = ({ product, badge, badgeColor, onDetail, formatSold: fs }) =
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{product.brand}</span>
                 {fs && <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>Đã bán {fs(product.sold)}</span>}
+                {fv && <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>👁 {fv(product.views)} xem</span>}
             </div>
             <p style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15, margin: '0 0 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -61,12 +67,120 @@ const SectionHeader = ({ title, sub, accent }) => (
     </div>
 );
 
+/* ── Horizontal Slider with Pagination ── */
+const HorizontalSlider = ({ products, badge, badgeColor, onDetail, type }) => {
+    const [currentPage, setCurrentPage] = useState(0);
+    const itemsPerPage = 4;
+    const totalPages = Math.ceil(products.length / itemsPerPage);
+
+    const handlePrev = () => {
+        setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
+    };
+
+    const handleNext = () => {
+        setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
+    };
+
+    const startIndex = currentPage * itemsPerPage;
+    const displayedProducts = products.slice(startIndex, startIndex + itemsPerPage);
+
+    return (
+        <div style={{ position: 'relative', width: '100%' }}>
+            {/* Arrow Left */}
+            {totalPages > 1 && (
+                <button 
+                    onClick={handlePrev}
+                    style={{
+                        position: 'absolute', left: -20, top: '42%', transform: 'translateY(-50%)', zIndex: 10,
+                        width: 44, height: 44, borderRadius: '50%', background: 'rgba(30,41,59,0.9)',
+                        border: '1px solid #334155', color: '#fff', fontSize: 20, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.4)', outline: 'none'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.borderColor = '#7c3aed'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(30,41,59,0.9)'; e.currentTarget.style.borderColor = '#334155'; }}
+                >
+                    ⟨
+                </button>
+            )}
+
+            {/* Grid Container */}
+            <div style={{ overflow: 'hidden', padding: '4px 0' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: 20
+                }}>
+                    {displayedProducts.map(p => (
+                        <ProductCard 
+                            key={p._id} 
+                            product={p} 
+                            badge={badge} 
+                            badgeColor={badgeColor} 
+                            onDetail={() => onDetail(p._id)} 
+                            formatSold={type === 'sold' ? formatSold : undefined}
+                            formatViews={type === 'views' ? formatViews : undefined}
+                        />
+                    ))}
+                    {/* Fill remaining slots with invisible card to keep layout stable */}
+                    {displayedProducts.length < itemsPerPage && 
+                        [...Array(itemsPerPage - displayedProducts.length)].map((_, i) => (
+                            <div key={`empty-${i}`} style={{ visibility: 'hidden' }} />
+                        ))
+                    }
+                </div>
+            </div>
+
+            {/* Arrow Right */}
+            {totalPages > 1 && (
+                <button 
+                    onClick={handleNext}
+                    style={{
+                        position: 'absolute', right: -20, top: '42%', transform: 'translateY(-50%)', zIndex: 10,
+                        width: 44, height: 44, borderRadius: '50%', background: 'rgba(30,41,59,0.9)',
+                        border: '1px solid #334155', color: '#fff', fontSize: 20, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.4)', outline: 'none'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.borderColor = '#7c3aed'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(30,41,59,0.9)'; e.currentTarget.style.borderColor = '#334155'; }}
+                >
+                    ⟩
+                </button>
+            )}
+
+            {/* Pagination Bullet Dots */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+                    {[...Array(totalPages)].map((_, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setCurrentPage(idx)}
+                            style={{
+                                width: idx === currentPage ? 24 : 8,
+                                height: 8,
+                                borderRadius: 4,
+                                background: idx === currentPage ? '#7c3aed' : '#334155',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                padding: 0
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 /* ── Main Page ── */
 const HomePage = () => {
     const { auth, setAuth } = useContext(AuthContext);
     const navigate = useNavigate();
     const [newProducts, setNewProducts] = useState([]);
     const [bestSellers, setBestSellers] = useState([]);
+    const [mostViewed, setMostViewed] = useState([]);
     const [promoProducts, setPromoProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -83,16 +197,18 @@ const HomePage = () => {
         const fetch = async () => {
             setLoading(true);
             try {
-                const [n, b, p] = await Promise.all([
+                const [n, p, top] = await Promise.all([
                     getProductsApi('new', 8),
-                    getProductsApi('best', 8),
                     getProductsApi('promo', 4),
+                    getTopProductsApi(),
                 ]);
-                // Handle both array (old) and {products, total} (new) response format
                 const extract = (res) => Array.isArray(res) ? res : (res?.products ?? []);
                 if (!n?.message) setNewProducts(extract(n));
-                if (!b?.message) setBestSellers(extract(b));
                 if (!p?.message) setPromoProducts(extract(p));
+                if (top && !top.message) {
+                    setBestSellers(top.bestSellers || []);
+                    setMostViewed(top.mostViewed || []);
+                }
             } finally { setLoading(false); }
         };
         fetch();
@@ -306,25 +422,52 @@ const HomePage = () => {
                     )}
                 </div>
 
-                {/* BEST SELLERS */}
+                {/* BEST SELLERS (SLIDER) */}
                 <div style={S.section}>
-                    <SectionHeader title="🏆 Bán Chạy Nhất" sub="Được tin dùng bởi hàng nghìn khách hàng" accent="#f59e0b" />
+                    <SectionHeader title="🏆 10 Sản Phẩm Bán Chạy Nhất" sub="Được tin dùng bởi hàng nghìn khách hàng với cơ chế phân trang ngang tiện lợi" accent="#f59e0b" />
                     {loading ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 20 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
                             {[...Array(4)].map((_, i) => (
                                 <div key={i} style={{ background: '#1e293b', borderRadius: 16, border: '1px solid #334155', height: 300 }} />
                             ))}
                         </div>
                     ) : bestSellers.length > 0 ? (
-                        <div style={S.grid4}>
-                            {bestSellers.map(p => (
-                                <ProductCard key={p._id} product={p} badge="HOT" badgeColor="#d97706" onDetail={() => navigate(`/product/${p._id}`)} formatSold={formatSold} />
-                            ))}
-                        </div>
+                        <HorizontalSlider 
+                            products={bestSellers} 
+                            badge="HOT" 
+                            badgeColor="#d97706" 
+                            onDetail={(id) => navigate(`/product/${id}`)} 
+                            type="sold" 
+                        />
                     ) : (
                         <div style={{ textAlign: 'center', color: '#64748b', padding: '60px 0', background: '#1e293b', borderRadius: 16, border: '1px solid #334155' }}>
                             <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
                             <p style={{ margin: 0 }}>Chưa có dữ liệu bán chạy</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* MOST VIEWED (SLIDER) */}
+                <div style={S.section}>
+                    <SectionHeader title="👁 10 Sản Phẩm Xem Nhiều Nhất" sub="Được quan tâm nhiều nhất trong tuần qua với cơ chế phân trang ngang tiện lợi" accent="#ec4899" />
+                    {loading ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} style={{ background: '#1e293b', borderRadius: 16, border: '1px solid #334155', height: 300 }} />
+                            ))}
+                        </div>
+                    ) : mostViewed.length > 0 ? (
+                        <HorizontalSlider 
+                            products={mostViewed} 
+                            badge="XEM NHIỀU" 
+                            badgeColor="#db2777" 
+                            onDetail={(id) => navigate(`/product/${id}`)} 
+                            type="views" 
+                        />
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#64748b', padding: '60px 0', background: '#1e293b', borderRadius: 16, border: '1px solid #334155' }}>
+                            <div style={{ fontSize: 48, marginBottom: 12 }}>👁</div>
+                            <p style={{ margin: 0 }}>Chưa có dữ liệu xem nhiều</p>
                         </div>
                     )}
                 </div>

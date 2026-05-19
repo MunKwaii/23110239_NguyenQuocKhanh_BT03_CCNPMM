@@ -48,6 +48,10 @@ const getFilterMetaApi = () => {
     return axios.get("/v1/api/products/meta/filters");
 };
 
+const getTopProductsApi = () => {
+    return axios.get("/v1/api/products/top");
+};
+
 export {
     createUserApi,
     loginApi,
@@ -59,4 +63,5 @@ export {
     forgotPasswordApi,
     resetPasswordApi,
     getFilterMetaApi,
+    getTopProductsApi,
 };

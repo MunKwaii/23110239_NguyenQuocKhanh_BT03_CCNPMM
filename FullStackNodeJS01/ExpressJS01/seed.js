@@ -372,8 +372,13 @@ const seedDB = async () => {
         await Product.deleteMany({});
         console.log("🗑️  Cleared existing products.");
 
-        await Product.insertMany(products);
-        console.log(`✅ Seeded ${products.length} products with multiple images!`);
+        const productsWithViews = products.map(p => ({
+            ...p,
+            views: Math.floor(Math.random() * 1950) + 50
+        }));
+
+        await Product.insertMany(productsWithViews);
+        console.log(`✅ Seeded ${products.length} products with multiple images and random views!`);
 
         // Show price distribution
         console.log("\n📊 Price distribution:");

@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema({
     stock: { type: Number, default: 0 },
     rating: { type: Number, default: 4.5 },
     sold: { type: Number, default: 0 },
+    views: { type: Number, default: 0 },
     isNewProduct: { type: Boolean, default: false },
     isBestSeller: { type: Boolean, default: false },
     isPromotion: { type: Boolean, default: false },
