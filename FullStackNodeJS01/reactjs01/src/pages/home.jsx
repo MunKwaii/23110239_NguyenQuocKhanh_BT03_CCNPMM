@@ -172,6 +172,13 @@ const HomePage = () => {
                         <span style={S.logoText}>TechZone</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <button onClick={() => navigate('/categories')}
+                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
+                        >
+                            📁 Danh mục
+                        </button>
                         <button onClick={() => navigate('/search')}
                             style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}

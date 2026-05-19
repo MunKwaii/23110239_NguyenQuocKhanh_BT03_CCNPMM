@@ -2,8 +2,10 @@ const Product = require('../models/product');
 
 const getProducts = async (req, res) => {
     try {
-        const { filter, limit: rawLimit, search, category, brand, minPrice, maxPrice, sortBy } = req.query;
+        const { filter, limit: rawLimit, page: rawPage, search, category, brand, minPrice, maxPrice, sortBy } = req.query;
+        const page = Math.max(parseInt(rawPage || '1', 10), 1);
         const limit = Math.min(parseInt(rawLimit || '12', 10), 50);
+        const skip = (page - 1) * limit;
         const query = {};
         let sort = { sold: -1 };
 
@@ -68,10 +70,10 @@ const getProducts = async (req, res) => {
         else if (sortBy === 'best_seller') sort = { sold: -1 };
         else if (sortBy === 'rating') sort = { rating: -1 };
 
-        const products = await Product.find(query).sort(sort).limit(limit);
+        const products = await Product.find(query).sort(sort).skip(skip).limit(limit);
         const total = await Product.countDocuments(query);
 
-        return res.status(200).json({ products, total });
+        return res.status(200).json({ products, total, page, limit });
     } catch (error) {
         console.error('getProducts error:', error);
         return res.status(500).json({ message: 'Failed to fetch products' });
