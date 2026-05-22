@@ -2,6 +2,7 @@ const express = require('express');
 const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
 const { getProducts, getProductById, getSimilarProducts, getFilterMeta, getTopProducts } = require('../controllers/productController');
 const { getCart, addToCart, updateCartItem, removeCartItem, clearCart } = require('../controllers/cartController');
+const { createOrder, getUserOrders, getOrderById } = require('../controllers/orderController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -36,5 +37,10 @@ router.post('/cart', addToCart);
 router.put('/cart', updateCartItem);
 router.delete('/cart/:productId', removeCartItem);
 router.delete('/cart', clearCart);
+
+// Đơn hàng (Order) routes
+router.post('/orders', createOrder);
+router.get('/orders', getUserOrders);
+router.get('/orders/:id', getOrderById);
 
 module.exports = router;

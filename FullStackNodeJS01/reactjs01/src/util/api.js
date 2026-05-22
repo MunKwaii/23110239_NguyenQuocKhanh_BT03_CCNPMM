@@ -72,6 +72,18 @@ const clearCartApi = () => {
     return axios.delete("/v1/api/cart");
 };
 
+const createOrderApi = (orderData) => {
+    return axios.post("/v1/api/orders", orderData);
+};
+
+const getUserOrdersApi = () => {
+    return axios.get("/v1/api/orders");
+};
+
+const getOrderByIdApi = (id) => {
+    return axios.get(`/v1/api/orders/${id}`);
+};
+
 export {
     createUserApi,
     loginApi,
@@ -89,4 +101,7 @@ export {
     updateCartItemApi,
     removeCartItemApi,
     clearCartApi,
+    createOrderApi,
+    getUserOrdersApi,
+    getOrderByIdApi,
 };

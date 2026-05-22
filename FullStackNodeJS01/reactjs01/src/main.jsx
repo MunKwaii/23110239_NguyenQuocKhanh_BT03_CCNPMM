@@ -14,6 +14,8 @@ import ProductDetailPage from './pages/product-detail.jsx';
 import SearchPage from './pages/search.jsx';
 import CategoriesPage from './pages/categories.jsx';
 import CartPage from './pages/cart.jsx';
+import CheckoutPage from './pages/checkout.jsx';
+import OrdersPage from './pages/orders.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
 import { CartWrapper } from './components/context/cart.context.jsx';
 import './styles/global.css';
@@ -46,6 +48,14 @@ const router = createBrowserRouter([
       {
         path: "cart",
         element: <CartPage />,
+      },
+      {
+        path: "checkout",
+        element: <CheckoutPage />,
+      },
+      {
+        path: "orders",
+        element: <OrdersPage />,
       },
     ],
   },

@@ -45,21 +45,27 @@ const Header = () => {
             key: 'SubMenu',
             icon: <SettingOutlined />,
             children: [
-                ...(auth.isAuthenticated ? [{
-                    label: <span onClick={() => {
-                        localStorage.removeItem("access_token");
-                        setAuth({
-                            isAuthenticated: false,
-                            user: {
-                                email: "",
-                                name: "",
-                                role: ""
-                            }
-                        })
-                        navigate("/");
-                    }}>Đăng xuất</span>,
-                    key: 'logout',
-                }] : [
+                ...(auth.isAuthenticated ? [
+                    {
+                        label: <Link to={"/orders"}>Đơn hàng của tôi</Link>,
+                        key: 'orders',
+                    },
+                    {
+                        label: <span onClick={() => {
+                            localStorage.removeItem("access_token");
+                            setAuth({
+                                isAuthenticated: false,
+                                user: {
+                                    email: "",
+                                    name: "",
+                                    role: ""
+                                }
+                            })
+                            navigate("/");
+                        }}>Đăng xuất</span>,
+                        key: 'logout',
+                    }
+                ] : [
                     {
                         label: <Link to={"/login"}>Đăng nhập</Link>,
                         key: 'login',

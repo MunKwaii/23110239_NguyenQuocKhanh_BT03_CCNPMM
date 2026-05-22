@@ -73,22 +73,7 @@ const CartPage = () => {
     };
 
     const handleCheckout = () => {
-        setCheckingOut(true);
-        Modal.success({
-            title: '🎉 Thanh toán thành công!',
-            content: (
-                <div style={{ marginTop: 12 }}>
-                    <p>Cảm ơn bạn đã mua sắm tại <strong>TechZone Premium</strong>.</p>
-                    <p>Đơn hàng của bạn đang được xử lý và sẽ sớm giao tới bạn.</p>
-                </div>
-            ),
-            okText: 'Tuyệt vời',
-            onOk: async () => {
-                await clearCart();
-                setCheckingOut(false);
-                navigate('/');
-            }
-        });
+        navigate('/checkout');
     };
 
     // Calculate billing
@@ -228,7 +213,7 @@ const CartPage = () => {
                                 <span style={{ color: '#7c3aed' }}>{fmt(totalAmount)}</span>
                             </div>
 
-                            <button onClick={handleCheckout} disabled={checkingOut || items.length === 0}
+                            <button onClick={handleCheckout} disabled={items.length === 0}
                                 style={{
                                     width: '100%', padding: '16px 0', border: 'none', borderRadius: 14, fontWeight: 700, fontSize: 16, cursor: 'pointer',
                                     background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', transition: 'transform 0.2s, box-shadow 0.2s'
@@ -236,7 +221,7 @@ const CartPage = () => {
                                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(124,58,237,0.4)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
                             >
-                                {checkingOut ? 'Đang xử lý...' : 'Tiến hành thanh toán →'}
+                                Tiến hành thanh toán →
                             </button>
                         </div>
                     </div>
