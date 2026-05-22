@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/context/auth.context';
+import { CartContext } from '../components/context/cart.context';
 import { getProductByIdApi, getSimilarProductsApi } from '../util/api';
 import { notification } from 'antd';
 
@@ -143,6 +144,7 @@ const SimilarCard = ({ item, onClick }) => (
 /* ─── Main Page ─────────────────────────────────────────────────── */
 const ProductDetailPage = () => {
     const { auth, setAuth } = useContext(AuthContext);
+    const { addToCart, cartCount } = useContext(CartContext);
     const navigate = useNavigate();
     const { id } = useParams();
     const [product, setProduct] = useState(null);
@@ -182,10 +184,13 @@ const ProductDetailPage = () => {
         navigate('/login');
     };
 
-    const handleAddToCart = () => {
-        setAddedToCart(true);
-        notification.success({ message: 'Đã thêm vào giỏ hàng!', description: `${qty} x ${product.name}` });
-        setTimeout(() => setAddedToCart(false), 2000);
+    const handleAddToCart = async () => {
+        const success = await addToCart(product._id, qty);
+        if (success) {
+            setAddedToCart(true);
+            notification.success({ message: 'Đã thêm vào giỏ hàng!', description: `${qty} x ${product.name}` });
+            setTimeout(() => setAddedToCart(false), 2000);
+        }
     };
 
     const pageStyle = { minHeight: '100vh', background: '#0f172a', color: '#f1f5f9', fontFamily: "'Inter', system-ui, sans-serif" };
@@ -243,6 +248,9 @@ const ProductDetailPage = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button onClick={() => navigate('/search')} style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 10, padding: '7px 16px', cursor: 'pointer', fontSize: 13 }}>🔍 Tìm kiếm</button>
+                        <button onClick={() => navigate('/cart')} style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 10, padding: '7px 16px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            🛒 Giỏ hàng ({cartCount})
+                        </button>
                         <button onClick={handleLogout} style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', borderRadius: 10, padding: '7px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Đăng xuất</button>
                     </div>
                 </div>

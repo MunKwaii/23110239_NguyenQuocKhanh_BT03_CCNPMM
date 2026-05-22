@@ -52,6 +52,26 @@ const getTopProductsApi = () => {
     return axios.get("/v1/api/products/top");
 };
 
+const getCartApi = () => {
+    return axios.get("/v1/api/cart");
+};
+
+const addToCartApi = (productId, quantity) => {
+    return axios.post("/v1/api/cart", { productId, quantity });
+};
+
+const updateCartItemApi = (productId, quantity) => {
+    return axios.put("/v1/api/cart", { productId, quantity });
+};
+
+const removeCartItemApi = (productId) => {
+    return axios.delete(`/v1/api/cart/${productId}`);
+};
+
+const clearCartApi = () => {
+    return axios.delete("/v1/api/cart");
+};
+
 export {
     createUserApi,
     loginApi,
@@ -64,4 +84,9 @@ export {
     resetPasswordApi,
     getFilterMetaApi,
     getTopProductsApi,
+    getCartApi,
+    addToCartApi,
+    updateCartItemApi,
+    removeCartItemApi,
+    clearCartApi,
 };

@@ -13,7 +13,9 @@ import ForgotPasswordPage from './pages/forgot-password.jsx';
 import ProductDetailPage from './pages/product-detail.jsx';
 import SearchPage from './pages/search.jsx';
 import CategoriesPage from './pages/categories.jsx';
+import CartPage from './pages/cart.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
+import { CartWrapper } from './components/context/cart.context.jsx';
 import './styles/global.css';
 
 const router = createBrowserRouter([
@@ -41,6 +43,10 @@ const router = createBrowserRouter([
         path: "categories",
         element: <CategoriesPage />,
       },
+      {
+        path: "cart",
+        element: <CartPage />,
+      },
     ],
   },
   {
@@ -60,7 +66,9 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthWrapper>
-      <RouterProvider router={router} />
+      <CartWrapper>
+        <RouterProvider router={router} />
+      </CartWrapper>
     </AuthWrapper>
   </React.StrictMode>,
 )

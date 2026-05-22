@@ -1,6 +1,7 @@
 const express = require('express');
 const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
 const { getProducts, getProductById, getSimilarProducts, getFilterMeta, getTopProducts } = require('../controllers/productController');
+const { getCart, addToCart, updateCartItem, removeCartItem, clearCart } = require('../controllers/cartController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -29,5 +30,11 @@ router.get('/products/top', getTopProducts);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/similar', getSimilarProducts);
 
+// Giỏ hàng (Cart) routes
+router.get('/cart', getCart);
+router.post('/cart', addToCart);
+router.put('/cart', updateCartItem);
+router.delete('/cart/:productId', removeCartItem);
+router.delete('/cart', clearCart);
 
 module.exports = router;

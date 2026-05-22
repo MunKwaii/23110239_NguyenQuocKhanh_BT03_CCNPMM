@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/context/auth.context';
+import { CartContext } from '../components/context/cart.context';
 import { useNavigate } from 'react-router-dom';
 import { getProductsApi, getTopProductsApi } from '../util/api';
 
@@ -177,6 +178,7 @@ const HorizontalSlider = ({ products, badge, badgeColor, onDetail, type }) => {
 /* ── Main Page ── */
 const HomePage = () => {
     const { auth, setAuth } = useContext(AuthContext);
+    const { cartCount } = useContext(CartContext);
     const navigate = useNavigate();
     const [newProducts, setNewProducts] = useState([]);
     const [bestSellers, setBestSellers] = useState([]);
@@ -301,6 +303,13 @@ const HomePage = () => {
                             onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
                         >
                             🔍 Tìm kiếm
+                        </button>
+                        <button onClick={() => navigate('/cart')}
+                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
+                        >
+                            🛒 Giỏ hàng ({cartCount})
                         </button>
                         <div style={S.userPill}>
                             <div style={S.avatar}>{(auth.user.name || auth.user.email || 'U').charAt(0).toUpperCase()}</div>
