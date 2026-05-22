@@ -2,7 +2,7 @@ const express = require('express');
 const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
 const { getProducts, getProductById, getSimilarProducts, getFilterMeta, getTopProducts } = require('../controllers/productController');
 const { getCart, addToCart, updateCartItem, removeCartItem, clearCart } = require('../controllers/cartController');
-const { createOrder, getUserOrders, getOrderById } = require('../controllers/orderController');
+const { createOrder, getUserOrders, getOrderById, cancelOrder, updateOrderStatus, simulateOrderTime } = require('../controllers/orderController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -42,5 +42,8 @@ router.delete('/cart', clearCart);
 router.post('/orders', createOrder);
 router.get('/orders', getUserOrders);
 router.get('/orders/:id', getOrderById);
+router.post('/orders/:id/cancel', cancelOrder);
+router.put('/orders/:id/status', updateOrderStatus);
+router.put('/orders/:id/simulate-time', simulateOrderTime);
 
 module.exports = router;

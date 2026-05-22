@@ -84,6 +84,18 @@ const getOrderByIdApi = (id) => {
     return axios.get(`/v1/api/orders/${id}`);
 };
 
+const cancelOrderApi = (id) => {
+    return axios.post(`/v1/api/orders/${id}/cancel`);
+};
+
+const updateOrderStatusApi = (id, status) => {
+    return axios.put(`/v1/api/orders/${id}/status`, { status });
+};
+
+const simulateOrderTimeApi = (id) => {
+    return axios.put(`/v1/api/orders/${id}/simulate-time`);
+};
+
 export {
     createUserApi,
     loginApi,
@@ -104,4 +116,7 @@ export {
     createOrderApi,
     getUserOrdersApi,
     getOrderByIdApi,
+    cancelOrderApi,
+    updateOrderStatusApi,
+    simulateOrderTimeApi,
 };
