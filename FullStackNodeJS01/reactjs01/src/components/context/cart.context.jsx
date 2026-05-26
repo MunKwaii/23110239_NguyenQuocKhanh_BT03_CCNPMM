@@ -93,7 +93,7 @@ export const CartWrapper = (props) => {
     const clearCart = async () => {
         try {
             const res = await clearCartApi();
-            if (res && !res.message) {
+            if (res && res.cart) {
                 setCart(res.cart || { items: [] });
                 return true;
             } else {

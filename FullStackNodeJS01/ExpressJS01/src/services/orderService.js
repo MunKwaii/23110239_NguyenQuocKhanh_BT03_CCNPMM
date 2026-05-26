@@ -128,13 +128,13 @@ const cancelOrderService = async (email, id) => {
         return { success: false, status: 403, message: 'Bạn không có quyền hủy đơn hàng này.' };
     }
 
-    const elapsedMs = Date.now() - new Date(order.createdAt).getTime();
-    const thirtyMinutesMs = 30 * 60 * 1000;
-    if (elapsedMs >= thirtyMinutesMs) {
-        return { success: false, status: 400, message: 'Đã quá 30 phút kể từ khi đặt đơn, bạn không thể hủy đơn hàng này.' };
-    }
-
     if (order.orderStatus === 'PENDING' || order.orderStatus === 'CONFIRMED') {
+        const elapsedMs = Date.now() - new Date(order.createdAt).getTime();
+        const thirtyMinutesMs = 30 * 60 * 1000;
+        if (elapsedMs >= thirtyMinutesMs) {
+            return { success: false, status: 400, message: 'Đã quá 30 phút kể từ khi đặt đơn, bạn không thể hủy trực tiếp đơn hàng này.' };
+        }
+
         order.orderStatus = 'CANCELLED';
         order.paymentStatus = 'FAILED';
 

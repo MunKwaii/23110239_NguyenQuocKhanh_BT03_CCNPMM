@@ -25,15 +25,20 @@ const CancelTimer = ({ createdAt, status, onCancel }) => {
         return () => clearInterval(timer);
     }, [createdAt]);
 
-    if (timeLeft <= 0 || !['PENDING', 'CONFIRMED', 'PROCESSING'].includes(status)) {
+    const isDirectCancel = ['PENDING', 'CONFIRMED'].includes(status);
+    const isProcessing = status === 'PROCESSING';
+
+    if (isDirectCancel && timeLeft <= 0) {
+        return null;
+    }
+
+    if (!isDirectCancel && !isProcessing) {
         return null;
     }
 
     const minutes = Math.floor(timeLeft / 60000);
     const seconds = Math.floor((timeLeft % 60000) / 1000);
     const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-    const isProcessing = status === 'PROCESSING';
 
     return (
         <div style={{
@@ -59,10 +64,12 @@ const CancelTimer = ({ createdAt, status, onCancel }) => {
                 </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 11, color: '#64748b', display: 'block' }}>Thời gian còn lại</span>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: '#f87171', fontFamily: 'monospace' }}>{timeStr}</span>
-                </div>
+                {!isProcessing && (
+                    <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 11, color: '#64748b', display: 'block' }}>Thời gian còn lại</span>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: '#f87171', fontFamily: 'monospace' }}>{timeStr}</span>
+                    </div>
+                )}
                 <button 
                     onClick={onCancel}
                     style={{
@@ -295,7 +302,7 @@ const OrdersPage = () => {
             onOk: async () => {
                 try {
                     const res = await cancelOrderApi(orderId);
-                    if (res && !res.message) {
+                    if (res && res.order) {
                         notification.success({
                             message: 'Thành công',
                             description: res.message || 'Xử lý hủy đơn hoàn tất.'
