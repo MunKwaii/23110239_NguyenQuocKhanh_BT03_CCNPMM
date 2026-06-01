@@ -18,7 +18,8 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
     try {
-        const product = await getProductByIdService(req.params.id);
+        const email = req.user?.email;
+        const product = await getProductByIdService(req.params.id, email);
         if (!product) return res.status(404).json({ message: 'Product not found' });
         return res.status(200).json(product);
     } catch (error) {

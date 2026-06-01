@@ -148,11 +148,57 @@ const resetPasswordService = async (email, newPassword) => {
     }
 }
 
+const toggleFavoriteService = async (email, productId) => {
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return { success: false, message: 'User not found' };
+
+        const index = user.favorites.indexOf(productId);
+        let isFavorite = false;
+        if (index > -1) {
+            user.favorites.splice(index, 1);
+        } else {
+            user.favorites.push(productId);
+            isFavorite = true;
+        }
+        await user.save();
+        return { success: true, isFavorite };
+    } catch (error) {
+        console.error('toggleFavoriteService error:', error);
+        return { success: false, message: 'Thêm vào yêu thích thất bại.' };
+    }
+};
+
+const getFavoritesService = async (email) => {
+    try {
+        const user = await User.findOne({ email }).populate('favorites');
+        if (!user) return { success: false, message: 'User not found' };
+        return { success: true, data: user.favorites || [] };
+    } catch (error) {
+        console.error('getFavoritesService error:', error);
+        return { success: false, message: 'Lấy danh sách yêu thích thất bại.' };
+    }
+};
+
+const getViewedProductsService = async (email) => {
+    try {
+        const user = await User.findOne({ email }).populate('viewedProducts');
+        if (!user) return { success: false, message: 'User not found' };
+        return { success: true, data: user.viewedProducts || [] };
+    } catch (error) {
+        console.error('getViewedProductsService error:', error);
+        return { success: false, message: 'Lấy danh sách sản phẩm đã xem thất bại.' };
+    }
+};
+
 // Xuất các hàm ra để controller sử dụng
 module.exports = {
     createUserService,
     loginService,
     getUserService,
     forgotPasswordService,
-    resetPasswordService
+    resetPasswordService,
+    toggleFavoriteService,
+    getFavoritesService,
+    getViewedProductsService
 }

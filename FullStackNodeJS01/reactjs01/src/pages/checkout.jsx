@@ -2,7 +2,7 @@ import { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../components/context/auth.context';
 import { CartContext } from '../components/context/cart.context';
-import { createOrderApi } from '../util/api';
+import { createOrderApi, getAccountApi, validateCouponApi } from '../util/api';
 import { Modal, notification, Spin, Input, Radio, Button, Form } from 'antd';
 
 const fmt = (v) => (v != null ? new Intl.NumberFormat('vi-VN').format(v) + 'đ' : '');
@@ -17,6 +17,24 @@ const CheckoutPage = () => {
     const [qrModalVisible, setQrModalVisible] = useState(false);
     const [selectedMethod, setSelectedMethod] = useState('COD');
     const [pendingOrderData, setPendingOrderData] = useState(null);
+
+    // Coupon & Points States
+    const [dbUser, setDbUser] = useState(null);
+    const [couponInput, setCouponInput] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [validatingCoupon, setValidatingCoupon] = useState(false);
+    const [pointsToUse, setPointsToUse] = useState(0);
+
+    // Fetch db User data for fresh points/coupons wallet
+    useEffect(() => {
+        const fetchUserDb = async () => {
+            const res = await getAccountApi();
+            if (res && !res.message) {
+                setDbUser(res);
+            }
+        };
+        if (auth.isAuthenticated) fetchUserDb();
+    }, [auth.isAuthenticated]);
 
     const isMember = auth.isAuthenticated && (auth.user.role || 'USER') === 'USER';
 
@@ -64,7 +82,45 @@ const CheckoutPage = () => {
     }, 0);
 
     const shippingFee = subtotal > 5000000 ? 0 : 30000;
-    const totalAmount = subtotal + shippingFee;
+    const couponDiscount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+    const pointsDiscount = pointsToUse * 100;
+    const totalAmount = Math.max(0, subtotal + shippingFee - couponDiscount - pointsDiscount);
+
+    // Max points user can redeem (cannot exceed remaining balance needed for order subtotal + shippingFee - couponDiscount)
+    const maxPointsRedeemable = dbUser ? Math.floor(Math.max(0, subtotal + shippingFee - couponDiscount) / 100) : 0;
+
+    const handleApplyCoupon = async () => {
+        if (!couponInput.trim()) {
+            notification.warning({ message: 'Vui lòng nhập mã giảm giá.' });
+            return;
+        }
+        setValidatingCoupon(true);
+        try {
+            const res = await validateCouponApi(couponInput, subtotal);
+            if (res && !res.message) {
+                setAppliedCoupon(res);
+                notification.success({
+                    message: '✓ Áp dụng mã thành công!',
+                    description: `Đã nhận được giảm giá ${fmt(res.discountAmount)}`
+                });
+            } else {
+                notification.error({
+                    message: 'Mã không hợp lệ',
+                    description: res?.message || 'Không thể áp dụng mã giảm giá này.'
+                });
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setValidatingCoupon(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponInput('');
+        notification.info({ message: 'Đã hủy áp dụng mã giảm giá.' });
+    };
 
     const handleFormSubmit = async (values) => {
         const orderData = {
@@ -74,6 +130,8 @@ const CheckoutPage = () => {
             notes: values.notes || '',
             paymentMethod: selectedMethod,
             paymentStatus: 'PENDING',
+            couponCode: appliedCoupon ? appliedCoupon.code : '',
+            pointsToRedeem: pointsToUse
         };
 
         if (selectedMethod === 'COD') {
@@ -309,17 +367,93 @@ const CheckoutPage = () => {
                                     })}
                                 </div>
 
+                                {/* Coupon Input Section */}
+                                <div style={{ background: '#0f172a', padding: 16, borderRadius: 16, border: '1px solid #334155', marginBottom: 16 }}>
+                                    <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span>🎟️</span> Áp dụng mã giảm giá
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <Input
+                                            placeholder="Nhập mã (ví dụ: WELCOME10)"
+                                            value={couponInput}
+                                            onChange={(e) => setCouponInput(e.target.value)}
+                                            disabled={!!appliedCoupon}
+                                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8, height: 38 }}
+                                        />
+                                        {appliedCoupon ? (
+                                            <Button danger onClick={handleRemoveCoupon} style={{ borderRadius: 8, height: 38 }}>Hủy</Button>
+                                        ) : (
+                                            <Button type="primary" onClick={handleApplyCoupon} loading={validatingCoupon} style={{ background: '#7c3aed', border: 'none', borderRadius: 8, height: 38 }}>
+                                                Áp dụng
+                                            </Button>
+                                        )}
+                                    </div>
+                                    {appliedCoupon && (
+                                        <div style={{ color: '#4ade80', fontSize: 12, marginTop: 6, fontWeight: 600 }}>
+                                            ✓ Đã áp dụng: {appliedCoupon.description}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Loyalty Points Section */}
+                                {dbUser?.loyaltyPoints > 0 && (
+                                    <div style={{ background: '#0f172a', padding: 16, borderRadius: 16, border: '1px solid #334155', marginBottom: 20 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                            <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span>💎</span> Dùng điểm tích lũy
+                                            </div>
+                                            <span style={{ fontSize: 12, color: '#eab308', fontWeight: 600 }}>Có {dbUser.loyaltyPoints} điểm</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={maxPointsRedeemable}
+                                                value={pointsToUse}
+                                                onChange={(e) => {
+                                                    let pts = parseInt(e.target.value, 10) || 0;
+                                                    if (pts > dbUser.loyaltyPoints) pts = dbUser.loyaltyPoints;
+                                                    if (pts > maxPointsRedeemable) pts = maxPointsRedeemable;
+                                                    if (pts < 0) pts = 0;
+                                                    setPointsToUse(pts);
+                                                }}
+                                                style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8, width: 100, height: 38 }}
+                                            />
+                                            <span style={{ fontSize: 12, color: '#64748b' }}>
+                                                = {fmt(pointsToUse * 100)} giảm giá
+                                            </span>
+                                        </div>
+                                        <span style={{ fontSize: 11, color: '#475569', display: 'block', marginTop: 6 }}>
+                                            * Tối đa được dùng {maxPointsRedeemable} điểm cho đơn này.
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#94a3b8', marginBottom: 12 }}>
                                     <span>Tạm tính:</span>
                                     <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{fmt(subtotal)}</span>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#94a3b8', marginBottom: 20 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#94a3b8', marginBottom: 12 }}>
                                     <span>Phí vận chuyển:</span>
                                     <span style={{ color: shippingFee === 0 ? '#4ade80' : '#f1f5f9', fontWeight: 600 }}>
                                         {shippingFee === 0 ? 'Miễn phí' : fmt(shippingFee)}
                                     </span>
                                 </div>
+
+                                {couponDiscount > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#f87171', marginBottom: 12 }}>
+                                        <span>Giảm giá coupon:</span>
+                                        <span style={{ fontWeight: 600 }}>-{fmt(couponDiscount)}</span>
+                                    </div>
+                                )}
+
+                                {pointsDiscount > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#f87171', marginBottom: 12 }}>
+                                        <span>Giảm điểm tích lũy:</span>
+                                        <span style={{ fontWeight: 600 }}>-{fmt(pointsDiscount)}</span>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#f8fafc', borderTop: '1px solid #334155', paddingTop: 16, marginBottom: 24 }}>
                                     <span>Tổng cộng:</span>

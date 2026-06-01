@@ -1,8 +1,10 @@
 const express = require('express');
-const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword } = require('../controllers/apiController');
+const { createUser, handleLogin, getUser, getAccount, handleForgotPassword, handleResetPassword, toggleFavorite, getFavorites, getViewedHistory } = require('../controllers/apiController');
 const { getProducts, getProductById, getSimilarProducts, getFilterMeta, getTopProducts } = require('../controllers/productController');
 const { getCart, addToCart, updateCartItem, removeCartItem, clearCart } = require('../controllers/cartController');
 const { createOrder, getUserOrders, getOrderById, cancelOrder, updateOrderStatus, simulateOrderTime } = require('../controllers/orderController');
+const { validateCoupon, getMyCoupons } = require('../controllers/couponController');
+const { createReview, getProductReviews, checkReviewEligibility } = require('../controllers/reviewController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -25,6 +27,7 @@ router.use(auth);
 
 router.get('/user', getUser);
 router.get('/account', delay, getAccount);
+router.get('/products/history/viewed', getViewedHistory);
 router.get('/products', getProducts);
 router.get('/products/meta/filters', getFilterMeta);
 router.get('/products/top', getTopProducts);
@@ -45,5 +48,18 @@ router.get('/orders/:id', getOrderById);
 router.post('/orders/:id/cancel', cancelOrder);
 router.put('/orders/:id/status', updateOrderStatus);
 router.put('/orders/:id/simulate-time', simulateOrderTime);
+
+// Coupons routes
+router.post('/coupons/validate', validateCoupon);
+router.get('/coupons/my-coupons', getMyCoupons);
+
+// Reviews routes
+router.post('/reviews', createReview);
+router.get('/products/:productId/reviews', getProductReviews);
+router.get('/products/:productId/review-eligibility', checkReviewEligibility);
+
+// Favorites routes
+router.post('/favorites', toggleFavorite);
+router.get('/favorites', getFavorites);
 
 module.exports = router;

@@ -510,7 +510,7 @@ const OrdersPage = () => {
                                             )}
 
                                             {/* Shipping & Payment Details */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, paddingBottom: 16 }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20, paddingBottom: 16 }}>
                                                 <div>
                                                     <h4 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>📍 Thông tin giao hàng</h4>
                                                     <div style={{ fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -523,18 +523,40 @@ const OrdersPage = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <h4 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>💳 Phương thức thanh toán</h4>
+                                                    <h4 style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>💳 Thanh toán & Giảm giá</h4>
                                                     <div style={{ fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                                        <div>{getPaymentMethodLabel(order.paymentMethod)}</div>
+                                                        <div><span style={{ color: '#64748b' }}>Phương thức:</span> {getPaymentMethodLabel(order.paymentMethod)}</div>
                                                         <div>
                                                             <span style={{ color: '#64748b' }}>Trạng thái:</span>{' '}
                                                             <span style={{ fontWeight: 600, color: order.paymentStatus === 'PAID' ? '#4ade80' : '#fbbf24' }}>
                                                                 {order.paymentStatus === 'PAID' ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'}
                                                             </span>
                                                         </div>
-                                                        <div>
-                                                            <span style={{ color: '#64748b' }}>Phí giao hàng:</span>{' '}
-                                                            {order.shippingFee === 0 ? <span style={{ color: '#4ade80' }}>Miễn phí</span> : fmt(order.shippingFee)}
+                                                        <div style={{ borderTop: '1px solid #334155', marginTop: 6, paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                                                                <span style={{ color: '#64748b' }}>Tạm tính:</span>
+                                                                <span>{fmt(order.items.reduce((sum, item) => sum + item.price * item.quantity, 0))}</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                                                                <span style={{ color: '#64748b' }}>Phí vận chuyển:</span>
+                                                                <span>{order.shippingFee === 0 ? 'Miễn phí' : fmt(order.shippingFee)}</span>
+                                                            </div>
+                                                            {order.couponDiscount > 0 && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#f87171' }}>
+                                                                    <span>Giảm giá coupon ({order.couponCode}):</span>
+                                                                    <span>-{fmt(order.couponDiscount)}</span>
+                                                                </div>
+                                                            )}
+                                                            {order.pointsDiscount > 0 && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#f87171' }}>
+                                                                    <span>Giảm điểm tích lũy:</span>
+                                                                    <span>-{fmt(order.pointsDiscount)}</span>
+                                                                </div>
+                                                            )}
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: '#a78bfa', borderTop: '1px solid #334155', marginTop: 4, paddingTop: 4 }}>
+                                                                <span>Tổng cộng:</span>
+                                                                <span>{fmt(order.totalAmount)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -567,6 +589,22 @@ const OrdersPage = () => {
                                                                     <div style={{ fontSize: 12, color: '#64748b' }}>
                                                                         Thương hiệu: {p.brand} | Số lượng: {item.quantity}
                                                                     </div>
+                                                                    {order.orderStatus === 'DELIVERED' && (
+                                                                        <Button 
+                                                                            type="primary" 
+                                                                            size="small" 
+                                                                            onClick={() => navigate(`/product/${p._id}#reviews`)}
+                                                                            style={{
+                                                                                marginTop: 8,
+                                                                                background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                                                                                border: 'none',
+                                                                                borderRadius: 6,
+                                                                                fontSize: 11
+                                                                            }}
+                                                                        >
+                                                                            Viết đánh giá
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                                 <div style={{ textAlign: 'right' }}>
                                                                     <div style={{ fontSize: 14, fontWeight: 700, color: '#a78bfa' }}>{fmt(item.price * item.quantity)}</div>

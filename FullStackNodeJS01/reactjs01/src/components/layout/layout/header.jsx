@@ -47,6 +47,10 @@ const Header = () => {
             children: [
                 ...(auth.isAuthenticated ? [
                     {
+                        label: <Link to={"/profile"}>Trang cá nhân</Link>,
+                        key: 'profile',
+                    },
+                    {
                         label: <Link to={"/orders"}>Đơn hàng của tôi</Link>,
                         key: 'orders',
                     },

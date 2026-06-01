@@ -62,7 +62,81 @@ const createOrderService = async (email, orderData) => {
     }
 
     const shippingFee = subtotal > 5000000 ? 0 : 30000;
-    const totalAmount = subtotal + shippingFee;
+
+    // --- Coupon & Points Calculation ---
+    const User = require('../models/user');
+    const Coupon = require('../models/coupon');
+    const user = await User.findOne({ email });
+
+    let couponDiscount = 0;
+    let finalCouponCode = '';
+    if (orderData.couponCode && orderData.couponCode.trim()) {
+        const code = orderData.couponCode.trim().toUpperCase();
+        let matchedCoupon = user.coupons.find(c => c.code.toUpperCase() === code && !c.isUsed);
+        let isPersonal = false;
+
+        if (matchedCoupon) {
+            isPersonal = true;
+        } else {
+            const globalCoupon = await Coupon.findOne({ code, isActive: true });
+            if (globalCoupon) {
+                if (!globalCoupon.expiryDate || new Date(globalCoupon.expiryDate) >= new Date()) {
+                    matchedCoupon = globalCoupon;
+                }
+            }
+        }
+
+        if (matchedCoupon) {
+            if (subtotal >= matchedCoupon.minOrderValue) {
+                if (matchedCoupon.discountType === 'percentage') {
+                    couponDiscount = Math.round(subtotal * (matchedCoupon.discountValue / 100));
+                } else if (matchedCoupon.discountType === 'fixed_amount') {
+                    couponDiscount = matchedCoupon.discountValue;
+                }
+
+                if (couponDiscount > subtotal) {
+                    couponDiscount = subtotal;
+                }
+                
+                finalCouponCode = matchedCoupon.code;
+
+                // If personal, mark it as used
+                if (isPersonal) {
+                    await User.updateOne(
+                        { email, 'coupons.code': matchedCoupon.code },
+                        { $set: { 'coupons.$.isUsed': true } }
+                    );
+                }
+            } else {
+                return { success: false, status: 400, message: `Mã giảm giá yêu cầu đơn hàng từ ${matchedCoupon.minOrderValue}đ.` };
+            }
+        } else {
+            return { success: false, status: 400, message: 'Mã giảm giá không hợp lệ hoặc đã được sử dụng.' };
+        }
+    }
+
+    let pointsRedeemed = 0;
+    let pointsDiscount = 0;
+    if (orderData.pointsToRedeem && parseInt(orderData.pointsToRedeem, 10) > 0) {
+        const points = parseInt(orderData.pointsToRedeem, 10);
+        if (user.loyaltyPoints < points) {
+            return { success: false, status: 400, message: `Bạn không đủ điểm tích lũy (Hiện có: ${user.loyaltyPoints}).` };
+        }
+
+        pointsRedeemed = points;
+        pointsDiscount = points * 100; // 1 point = 100đ
+
+        const maxPointsDiscount = subtotal + shippingFee - couponDiscount;
+        if (pointsDiscount > maxPointsDiscount) {
+            pointsDiscount = maxPointsDiscount;
+            pointsRedeemed = Math.ceil(maxPointsDiscount / 100);
+        }
+
+        // Deduct points
+        await User.updateOne({ email }, { $inc: { loyaltyPoints: -pointsRedeemed } });
+    }
+
+    const totalAmount = Math.max(0, subtotal + shippingFee - couponDiscount - pointsDiscount);
 
     const finalPaymentStatus = paymentStatus || 'PENDING';
     const finalOrderStatus = 'PENDING';
@@ -83,7 +157,11 @@ const createOrderService = async (email, orderData) => {
         paymentStatus: finalPaymentStatus,
         orderStatus: finalOrderStatus,
         shippingFee,
-        totalAmount
+        totalAmount,
+        couponCode: finalCouponCode,
+        couponDiscount,
+        pointsRedeemed,
+        pointsDiscount
     });
 
     // Clear user's cart

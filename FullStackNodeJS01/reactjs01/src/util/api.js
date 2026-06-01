@@ -96,6 +96,38 @@ const simulateOrderTimeApi = (id) => {
     return axios.put(`/v1/api/orders/${id}/simulate-time`);
 };
 
+const toggleFavoriteApi = (productId) => {
+    return axios.post("/v1/api/favorites", { productId });
+};
+
+const getFavoritesApi = () => {
+    return axios.get("/v1/api/favorites");
+};
+
+const getViewedHistoryApi = () => {
+    return axios.get("/v1/api/products/history/viewed");
+};
+
+const createReviewApi = (reviewData) => {
+    return axios.post("/v1/api/reviews", reviewData);
+};
+
+const getReviewsApi = (productId) => {
+    return axios.get(`/v1/api/products/${productId}/reviews`);
+};
+
+const checkReviewEligibilityApi = (productId) => {
+    return axios.get(`/v1/api/products/${productId}/review-eligibility`);
+};
+
+const validateCouponApi = (code, orderSubtotal) => {
+    return axios.post("/v1/api/coupons/validate", { code, orderSubtotal });
+};
+
+const getMyCouponsApi = () => {
+    return axios.get("/v1/api/coupons/my-coupons");
+};
+
 export {
     createUserApi,
     loginApi,
@@ -119,4 +151,12 @@ export {
     cancelOrderApi,
     updateOrderStatusApi,
     simulateOrderTimeApi,
+    toggleFavoriteApi,
+    getFavoritesApi,
+    getViewedHistoryApi,
+    createReviewApi,
+    getReviewsApi,
+    checkReviewEligibilityApi,
+    validateCouponApi,
+    getMyCouponsApi
 };

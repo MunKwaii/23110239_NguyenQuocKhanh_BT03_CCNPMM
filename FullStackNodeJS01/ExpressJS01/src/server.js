@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true })); // [cite: 339]
 // 3. Cấu hình View Engine (EJS)
 configViewEngine(app); // [cite: 340]
 
-// 4. Khai báo Route cho Giao diện (Web View) - PHẦN BẠN ĐANG THIẾU
+// 4. Khai báo Route cho Giao diện (Web View) 
 const webAPI = express.Router(); // [cite: 345]
 webAPI.get("/", getHomepage); // Gọi hàm render index.ejs [cite: 347, 563]
 app.use('/', webAPI); // [cite: 350]
@@ -27,11 +27,14 @@ app.use('/', webAPI); // [cite: 350]
 // 5. Khai báo Route cho API
 app.use('/v1/api/', apiRoutes); // [cite: 356]
 
+const { seedGlobalCoupons } = require('./services/couponService');
+
 // 6. Khởi chạy server và kết nối Database
 (async () => {
     try {
         // Kết nối database bằng mongoose [cite: 370]
         await connection();
+        await seedGlobalCoupons();
         app.listen(port, () => {
             console.log(`Backend Nodejs App listening on port ${port}`); // [cite: 373]
         });

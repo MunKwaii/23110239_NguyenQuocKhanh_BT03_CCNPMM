@@ -2,8 +2,8 @@ import { useContext, useEffect, useMemo, useState, useRef, useCallback } from 'r
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/context/auth.context';
 import { CartContext } from '../components/context/cart.context';
-import { getProductByIdApi, getSimilarProductsApi } from '../util/api';
-import { notification } from 'antd';
+import { getProductByIdApi, getSimilarProductsApi, toggleFavoriteApi, getFavoritesApi, createReviewApi, getReviewsApi, checkReviewEligibilityApi } from '../util/api';
+import { notification, Modal, Button, Rate, Input, Tag } from 'antd';
 
 const fmt = (v) => (v != null ? new Intl.NumberFormat('vi-VN').format(v) + 'đ' : '');
 const fmtSold = (v) => (!v && v !== 0 ? '0' : v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v));
@@ -147,30 +147,115 @@ const ProductDetailPage = () => {
     const { addToCart, cartCount } = useContext(CartContext);
     const navigate = useNavigate();
     const { id } = useParams();
+    
     const [product, setProduct] = useState(null);
     const [similar, setSimilar] = useState([]);
     const [qty, setQty] = useState(1);
     const [loading, setLoading] = useState(true);
     const [addedToCart, setAddedToCart] = useState(false);
 
+    // Favorites & Reviews States
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [reviews, setReviews] = useState([]);
+    const [eligibleData, setEligibleData] = useState({ eligible: false });
+    const [formRating, setFormRating] = useState(5);
+    const [formComment, setFormComment] = useState('');
+    const [formReward, setFormReward] = useState('points');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [rewardModalVisible, setRewardModalVisible] = useState(false);
+    const [rewardDetail, setRewardDetail] = useState(null);
+
     const isMember = auth.isAuthenticated && (auth.user.role || 'USER') === 'USER';
 
-    useEffect(() => {
+    const loadAllDetails = async () => {
         if (!isMember) { setLoading(false); return; }
-        const load = async () => {
-            setLoading(true);
-            setQty(1);
-            try {
-                const [pRes, sRes] = await Promise.all([
-                    getProductByIdApi(id),
-                    getSimilarProductsApi(id, 8)
-                ]);
-                if (!pRes?.message) setProduct(pRes);
-                if (!sRes?.message) setSimilar(sRes);
-            } finally { setLoading(false); }
-        };
-        load();
+        setLoading(true);
+        setQty(1);
+        try {
+            const [pRes, sRes, favsRes, revsRes, eligRes] = await Promise.all([
+                getProductByIdApi(id),
+                getSimilarProductsApi(id, 8),
+                getFavoritesApi(),
+                getReviewsApi(id),
+                checkReviewEligibilityApi(id)
+            ]);
+
+            if (pRes && !pRes.message) setProduct(pRes);
+            if (sRes && !sRes.message) setSimilar(sRes);
+            if (favsRes && !favsRes.message) {
+                setIsFavorite(favsRes.some(f => f._id === id));
+            }
+            if (revsRes && !revsRes.message) setReviews(revsRes);
+            if (eligRes && !eligRes.message) setEligibleData(eligRes);
+        } catch (error) {
+            console.error('Error loading product details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAllDetails();
     }, [id, isMember]);
+
+    const handleToggleFavorite = async () => {
+        try {
+            const res = await toggleFavoriteApi(product._id);
+            if (res && res.success) {
+                setIsFavorite(res.isFavorite);
+                notification.success({
+                    message: res.isFavorite ? '❤️ Đã thêm vào yêu thích!' : '💔 Đã xóa khỏi yêu thích!',
+                    placement: 'topRight'
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleReviewSubmit = async () => {
+        if (!formComment.trim()) {
+            notification.warning({ message: 'Vui lòng nhập nhận xét.' });
+            return;
+        }
+        setSubmittingReview(true);
+        try {
+            const res = await createReviewApi({
+                productId: product._id,
+                rating: formRating,
+                comment: formComment,
+                rewardType: formReward
+            });
+
+            if (res && !res.message) {
+                setRewardDetail(res);
+                setRewardModalVisible(true);
+                // Reset form
+                setFormComment('');
+                setFormRating(5);
+                setFormReward('points');
+                
+                // Refresh data
+                const [pRes, revsRes, eligRes] = await Promise.all([
+                    getProductByIdApi(id),
+                    getReviewsApi(id),
+                    checkReviewEligibilityApi(id)
+                ]);
+                if (pRes && !pRes.message) setProduct(pRes);
+                if (revsRes && !revsRes.message) setReviews(revsRes);
+                if (eligRes && !eligRes.message) setEligibleData(eligRes);
+            } else {
+                notification.error({
+                    message: 'Gửi đánh giá thất bại',
+                    description: res?.message || 'Đã có lỗi xảy ra.'
+                });
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     const images = useMemo(() => {
         if (!product) return [];
@@ -282,7 +367,33 @@ const ProductDetailPage = () => {
                             {product.isPromotion && <span style={{ background: 'rgba(225,29,72,.15)', color: '#fb7185', borderRadius: 8, padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>🔥 Sale</span>}
                         </div>
 
-                        <h1 style={{ fontSize: 26, fontWeight: 900, color: '#f8fafc', margin: '0 0 12px', lineHeight: 1.3 }}>{product.name}</h1>
+                        {/* Product Title and Favorite Button */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 16, marginBottom: 12 }}>
+                            <h1 style={{ fontSize: 26, fontWeight: 900, color: '#f8fafc', margin: 0, lineHeight: 1.3, flex: 1 }}>{product.name}</h1>
+                            <button
+                                onClick={handleToggleFavorite}
+                                style={{
+                                    background: 'rgba(255,255,255,.05)',
+                                    border: '1px solid #334155',
+                                    borderRadius: '50%',
+                                    width: 46, height: 46,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', transition: 'all .25s',
+                                    color: isFavorite ? '#ef4444' : '#94a3b8',
+                                    fontSize: 20
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,.1)';
+                                    e.currentTarget.style.borderColor = '#ef4444';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,.05)';
+                                    e.currentTarget.style.borderColor = '#334155';
+                                }}
+                            >
+                                {isFavorite ? '❤️' : '🤍'}
+                            </button>
+                        </div>
 
                         <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.7, margin: '0 0 24px' }}>
                             {product.description || 'Sản phẩm chất lượng cao, mang đến trải nghiệm âm thanh tuyệt vời cho người dùng.'}
@@ -304,6 +415,9 @@ const ProductDetailPage = () => {
                         <InfoRow label="🛍️ Đã bán" value={fmtSold(product.sold) + ' sản phẩm'} />
                         <InfoRow label="⭐ Đánh giá" value={`${product.rating || 4.5} / 5`} color="#fbbf24" />
                         <InfoRow label="🔧 Bảo hành" value={`${product.warrantyMonths || 24} tháng`} />
+                        <InfoRow label="👁️ Lượt xem" value={`${product.views || 0} views`} color="#38bdf8" />
+                        <InfoRow label="👥 Khách đã mua" value={`${product.buyersCount || 0} khách`} color="#a78bfa" />
+                        <InfoRow label="💬 Khách nhận xét" value={`${product.commentersCount || 0} bình luận`} color="#fb7185" />
 
                         {/* Tags */}
                         {product.tags?.length > 0 && (
@@ -348,13 +462,138 @@ const ProductDetailPage = () => {
                                 {addedToCart ? '✓ Đã thêm!' : '🛒 Thêm vào giỏ'}
                             </button>
                             <button style={{ padding: '14px 20px', border: '1px solid #334155', borderRadius: 14, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontWeight: 600, transition: 'all .2s' }}
+                                onClick={() => navigate('/profile')}
                                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
                                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
                             >
-                                💬 Tư vấn
+                                👤 Trang cá nhân
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* Reviews & Comments Section */}
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 24, padding: 32, marginBottom: 60 }}>
+                    <h2 id="reviews" style={{ fontSize: 22, fontWeight: 800, color: '#f8fafc', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span>💬</span> Đánh giá & Nhận xét ({reviews.length})
+                    </h2>
+
+                    {/* Review Form (if eligible) */}
+                    {eligibleData.eligible ? (
+                        <div style={{ background: '#0f172a', padding: 24, borderRadius: 20, border: '1px solid rgba(124, 58, 237, 0.2)', marginBottom: 40 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa', marginBottom: 18 }}>✍️ Viết nhận xét & Đánh giá của bạn</h3>
+                            
+                            <div style={{ marginBottom: 18 }}>
+                                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Số sao đánh giá:</label>
+                                <Rate value={formRating} onChange={setFormRating} style={{ color: '#fbbf24', fontSize: 24 }} />
+                            </div>
+
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Nhận xét chi tiết:</label>
+                                <Input.TextArea
+                                    rows={4}
+                                    value={formComment}
+                                    onChange={(e) => setFormComment(e.target.value)}
+                                    placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này (chất lượng âm thanh, độ êm ái, thời lượng pin...)..."
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 12 }}
+                                />
+                            </div>
+
+                            {/* Reward Selection */}
+                            <div style={{ marginBottom: 24 }}>
+                                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Chọn quà tặng của bạn sau khi gửi đánh giá:</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div
+                                        onClick={() => setFormReward('points')}
+                                        style={{
+                                            padding: 16, borderRadius: 14, cursor: 'pointer', textAlign: 'center',
+                                            background: formReward === 'points' ? 'rgba(234,179,8,0.08)' : '#1e293b',
+                                            border: formReward === 'points' ? '2px solid #eab308' : '1px solid #334155',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: 24, marginBottom: 4 }}>💎</div>
+                                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: 14 }}>Tặng 100 Điểm Tích Lũy</div>
+                                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Cộng thẳng vào kho điểm tích lũy</div>
+                                    </div>
+
+                                    <div
+                                        onClick={() => setFormReward('coupon')}
+                                        style={{
+                                            padding: 16, borderRadius: 14, cursor: 'pointer', textAlign: 'center',
+                                            background: formReward === 'coupon' ? 'rgba(124,58,237,0.08)' : '#1e293b',
+                                            border: formReward === 'coupon' ? '2px solid #7c3aed' : '1px solid #334155',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: 24, marginBottom: 4 }}>🎟️</div>
+                                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: 14 }}>Tặng Voucher 10%</div>
+                                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Mã giảm giá áp cho đơn sau từ 0đ</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Button
+                                type="primary"
+                                loading={submittingReview}
+                                onClick={handleReviewSubmit}
+                                style={{
+                                    height: 44, padding: '0 28px', border: 'none', borderRadius: 10, fontWeight: 700,
+                                    background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff'
+                                }}
+                            >
+                                Gửi Đánh Giá & Nhận Quà
+                            </Button>
+                        </div>
+                    ) : (
+                        eligibleData.reason && (
+                            <div style={{ background: '#0f172a', padding: '14px 20px', borderRadius: 14, border: '1px solid #1e293b', color: '#64748b', fontSize: 13, marginBottom: 30, display: 'inline-block' }}>
+                                🔒 {eligibleData.reason}
+                            </div>
+                        )
+                    )}
+
+                    {/* Reviews List */}
+                    {reviews.length === 0 ? (
+                        <div style={{ color: '#64748b', textAlign: 'center', padding: '40px 0', fontStyle: 'italic' }}>
+                            Chưa có nhận xét nào cho sản phẩm này. Hãy mua hàng và để lại nhận xét đầu tiên!
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            {reviews.map((r) => (
+                                <div key={r._id} style={{ borderBottom: '1px solid #334155', paddingBottom: 20 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{
+                                                    width: 32, height: 32, borderRadius: '50%', background: '#475569',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    color: '#fff', fontWeight: 'bold', fontSize: 12
+                                                }}>
+                                                    {r.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: 700, color: '#f1f5f9', fontSize: 14 }}>{r.name}</div>
+                                                    <div style={{ color: '#64748b', fontSize: 11 }}>{new Date(r.createdAt).toLocaleDateString('vi-VN')}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Rate disabled value={r.rating} style={{ color: '#fbbf24', fontSize: 14 }} />
+                                        </div>
+                                    </div>
+                                    <p style={{ color: '#e2e8f0', fontSize: 14, lineHeight: 1.6, margin: '0 0 10px', paddingLeft: 42 }}>
+                                        {r.comment}
+                                    </p>
+                                    <div style={{ paddingLeft: 42 }}>
+                                        <Tag color={r.rewardType === 'points' ? 'gold' : 'purple'} style={{ fontSize: 11, borderRadius: 6 }}>
+                                            🎁 Đã nhận: {r.rewardType === 'points' ? `+${r.rewardValue} điểm tích lũy` : `Mã giảm giá ${r.rewardValue}`}
+                                        </Tag>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Similar Products */}
@@ -374,8 +613,60 @@ const ProductDetailPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Reward Pop-up Modal */}
+            <Modal
+                title={null}
+                open={rewardModalVisible}
+                footer={null}
+                onCancel={() => setRewardModalVisible(false)}
+                centered
+                styles={{
+                    body: { background: '#1e293b', color: '#f1f5f9', padding: 32, borderRadius: 24, textAlign: 'center' },
+                    content: { background: '#1e293b', padding: 0, borderRadius: 24 }
+                }}
+                width={420}
+            >
+                <div style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+                    <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Cảm ơn nhận xét của bạn!</h3>
+                    <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 24 }}>
+                        Đánh giá của bạn đã được gửi thành công. Phần thưởng của bạn là:
+                    </p>
+
+                    {rewardDetail?.rewardType === 'points' ? (
+                        <div style={{ background: '#0f172a', padding: 24, borderRadius: 16, marginBottom: 24 }}>
+                            <div style={{ fontSize: 32, fontWeight: 900, color: '#eab308' }}>+100</div>
+                            <div style={{ color: '#eab308', fontWeight: 700, fontSize: 13, textTransform: 'uppercase', marginTop: 4 }}>Điểm tích lũy</div>
+                            <p style={{ color: '#64748b', fontSize: 12, margin: '12px 0 0' }}>
+                                Điểm đã được cộng trực tiếp vào Kho điểm của bạn.
+                            </p>
+                        </div>
+                    ) : (
+                        <div style={{ background: '#0f172a', padding: 24, borderRadius: 16, marginBottom: 24, border: '1px dashed #7c3aed' }}>
+                            <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', marginBottom: 8 }}>VOUCHER GIẢM 10%</div>
+                            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: 1 }}>{rewardDetail?.rewardValue}</div>
+                            <p style={{ color: '#64748b', fontSize: 12, margin: '12px 0 0' }}>
+                                Mã đã được lưu vào ví. Dùng tại trang thanh toán cho đơn tiếp theo.
+                            </p>
+                        </div>
+                    )}
+
+                    <Button
+                        type="primary"
+                        onClick={() => setRewardModalVisible(false)}
+                        style={{
+                            width: '100%', height: 44, borderRadius: 10, border: 'none', fontWeight: 700,
+                            background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff'
+                        }}
+                    >
+                        Tuyệt vời, đóng
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };
 
 export default ProductDetailPage;
+

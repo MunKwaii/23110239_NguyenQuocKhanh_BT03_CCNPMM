@@ -73,13 +73,57 @@ const getProductsService = async (queryParams) => {
     return { products, total, page, limit };
 };
 
-const getProductByIdService = async (id) => {
+const Order = require('../models/order');
+const Review = require('../models/review');
+const User = require('../models/user');
+
+const getProductByIdService = async (id, email = null) => {
     const product = await Product.findByIdAndUpdate(
         id,
         { $inc: { views: 1 } },
         { new: true }
     );
-    return product;
+    if (!product) return null;
+
+    // Update viewed products list
+    if (email) {
+        try {
+            await User.findOneAndUpdate(
+                { email },
+                { $pull: { viewedProducts: product._id } }
+            );
+            await User.findOneAndUpdate(
+                { email },
+                {
+                    $push: {
+                        viewedProducts: {
+                            $each: [product._id],
+                            $position: 0,
+                            $slice: 10
+                        }
+                    }
+                }
+            );
+        } catch (err) {
+            console.error('Failed to update viewed history:', err);
+        }
+    }
+
+    // Calculate buyers count (delivered orders containing product)
+    const buyers = await Order.find({
+        orderStatus: 'DELIVERED',
+        'items.product': product._id
+    }).distinct('email');
+    const buyersCount = buyers.length;
+
+    // Calculate commenters count
+    const commentersCount = await Review.countDocuments({ product: product._id });
+
+    const productObj = product.toJSON();
+    productObj.buyersCount = buyersCount;
+    productObj.commentersCount = commentersCount;
+
+    return productObj;
 };
 
 const getTopProductsService = async () => {
