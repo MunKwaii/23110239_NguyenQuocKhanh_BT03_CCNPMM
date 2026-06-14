@@ -138,6 +138,37 @@ const createOrderService = async (email, orderData) => {
 
     const totalAmount = Math.max(0, subtotal + shippingFee - couponDiscount - pointsDiscount);
 
+    // Check for price mismatch and log it
+    if (orderData.expectedSubtotal !== undefined && orderData.expectedTotalAmount !== undefined) {
+        const expSub = Number(orderData.expectedSubtotal);
+        const expTotal = Number(orderData.expectedTotalAmount);
+        
+        if (expSub !== subtotal || expTotal !== totalAmount) {
+            const fs = require('fs');
+            const path = require('path');
+            try {
+                const logDir = path.join(__dirname, '../../logs');
+                if (!fs.existsSync(logDir)) {
+                    fs.mkdirSync(logDir, { recursive: true });
+                }
+                const logFilePath = path.join(logDir, 'price_mismatch.log');
+                const timestamp = new Date().toLocaleString('vi-VN');
+                const logMessage = `[${timestamp}] CẢNH BÁO LỆCH GIÁ: User: ${email}\n` +
+                    `  - Client hiển thị Subtotal: ${expSub.toLocaleString('vi-VN')}đ | Backend tính Subtotal: ${subtotal.toLocaleString('vi-VN')}đ\n` +
+                    `  - Client hiển thị Total: ${expTotal.toLocaleString('vi-VN')}đ | Backend tính Total: ${totalAmount.toLocaleString('vi-VN')}đ\n` +
+                    `  - Trạng thái: HỆ THỐNG ĐÃ ĐẶT HÀNG THEO GIÁ DB MỚI NHẤT (${totalAmount.toLocaleString('vi-VN')}đ)\n\n`;
+                
+                console.warn(`⚠️ [CẢNH BÁO LỆCH GIÁ] Phát hiện sai lệch giá khi đặt hàng cho user ${email}!`);
+                console.warn(`  - Hiển thị trên màn hình khách: ${expSub}đ (Subtotal), ${expTotal}đ (Total)`);
+                console.warn(`  - Thực tế tính toán từ Database: ${subtotal}đ (Subtotal), ${totalAmount}đ (Total)`);
+                
+                fs.appendFileSync(logFilePath, logMessage, 'utf8');
+            } catch (err) {
+                console.error('Lỗi khi ghi log price mismatch:', err);
+            }
+        }
+    }
+
     const finalPaymentStatus = paymentStatus || 'PENDING';
     const finalOrderStatus = 'PENDING';
 

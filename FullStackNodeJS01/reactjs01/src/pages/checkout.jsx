@@ -131,7 +131,9 @@ const CheckoutPage = () => {
             paymentMethod: selectedMethod,
             paymentStatus: 'PENDING',
             couponCode: appliedCoupon ? appliedCoupon.code : '',
-            pointsToRedeem: pointsToUse
+            pointsToRedeem: pointsToUse,
+            expectedSubtotal: subtotal,
+            expectedTotalAmount: totalAmount
         };
 
         if (selectedMethod === 'COD') {
