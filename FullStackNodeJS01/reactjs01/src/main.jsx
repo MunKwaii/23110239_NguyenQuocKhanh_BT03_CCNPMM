@@ -17,6 +17,7 @@ import CartPage from './pages/cart.jsx';
 import CheckoutPage from './pages/checkout.jsx';
 import OrdersPage from './pages/orders.jsx';
 import ProfilePage from './pages/profile.jsx';
+import DashboardPage from './pages/dashboard.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
 import { CartWrapper } from './components/context/cart.context.jsx';
 import './styles/global.css';
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         path: "user",
         element: <UserPage />,
+      },
+      {
+        path: "dashboard",
+        element: <DashboardPage />,
       },
       {
         path: "product/:id",

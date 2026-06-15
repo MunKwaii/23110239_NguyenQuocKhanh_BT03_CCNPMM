@@ -5,6 +5,8 @@ const { getCart, addToCart, updateCartItem, removeCartItem, clearCart } = requir
 const { createOrder, getUserOrders, getOrderById, cancelOrder, updateOrderStatus, simulateOrderTime } = require('../controllers/orderController');
 const { validateCoupon, getMyCoupons } = require('../controllers/couponController');
 const { createReview, getProductReviews, checkReviewEligibility } = require('../controllers/reviewController');
+const { getStatsSummary, getWalletHistory } = require('../controllers/statsController');
+const { getNotifications, markAsRead, markAllAsRead, simulateNotification } = require('../controllers/notificationController');
 const auth = require("../middleware/auth");
 const delay = require("../middleware/delay");
 
@@ -61,5 +63,15 @@ router.get('/products/:productId/review-eligibility', checkReviewEligibility);
 // Favorites routes
 router.post('/favorites', toggleFavorite);
 router.get('/favorites', getFavorites);
+
+// Statistics routes
+router.get('/stats/summary', getStatsSummary);
+router.get('/stats/wallet-history', getWalletHistory);
+
+// Notifications routes
+router.get('/notifications', getNotifications);
+router.put('/notifications/read-all', markAllAsRead);
+router.put('/notifications/:id/read', markAsRead);
+router.post('/notifications/simulate', simulateNotification);
 
 module.exports = router;

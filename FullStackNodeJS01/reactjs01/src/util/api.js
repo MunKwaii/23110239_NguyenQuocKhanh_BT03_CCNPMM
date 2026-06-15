@@ -128,6 +128,30 @@ const getMyCouponsApi = () => {
     return axios.get("/v1/api/coupons/my-coupons");
 };
 
+const getStatsSummaryApi = () => {
+    return axios.get("/v1/api/stats/summary");
+};
+
+const getWalletHistoryApi = () => {
+    return axios.get("/v1/api/stats/wallet-history");
+};
+
+const getNotificationsApi = () => {
+    return axios.get("/v1/api/notifications");
+};
+
+const markNotificationReadApi = (id) => {
+    return axios.put(`/v1/api/notifications/${id}/read`);
+};
+
+const markAllNotificationsReadApi = () => {
+    return axios.put("/v1/api/notifications/read-all");
+};
+
+const simulateNotificationApi = (data) => {
+    return axios.post("/v1/api/notifications/simulate", data);
+};
+
 export {
     createUserApi,
     loginApi,
@@ -158,5 +182,11 @@ export {
     getReviewsApi,
     checkReviewEligibilityApi,
     validateCouponApi,
-    getMyCouponsApi
+    getMyCouponsApi,
+    getStatsSummaryApi,
+    getWalletHistoryApi,
+    getNotificationsApi,
+    markNotificationReadApi,
+    markAllNotificationsReadApi,
+    simulateNotificationApi
 };

@@ -39,7 +39,11 @@ const userSchema = new mongoose.Schema({
     viewedProducts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'product'
-    }]
+    }],
+    walletBalance: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true // Tự động sinh ra 2 trường createdAt và updatedAt
 });

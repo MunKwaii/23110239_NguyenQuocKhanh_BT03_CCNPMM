@@ -28,6 +28,12 @@ app.use('/', webAPI); // [cite: 350]
 app.use('/v1/api/', apiRoutes); // [cite: 356]
 
 const { seedGlobalCoupons } = require('./services/couponService');
+const http = require('http');
+const websocketService = require('./services/websocketService');
+
+// Wrap express app with HTTP server for WebSockets integration
+const server = http.createServer(app);
+websocketService.init(server);
 
 // 6. Khởi chạy server và kết nối Database
 (async () => {
@@ -35,7 +41,7 @@ const { seedGlobalCoupons } = require('./services/couponService');
         // Kết nối database bằng mongoose [cite: 370]
         await connection();
         await seedGlobalCoupons();
-        app.listen(port, () => {
+        server.listen(port, () => {
             console.log(`Backend Nodejs App listening on port ${port}`); // [cite: 373]
         });
     } catch (error) {
