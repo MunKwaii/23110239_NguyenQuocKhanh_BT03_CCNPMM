@@ -197,20 +197,15 @@ const SearchPage = () => {
 
     return (
         <div style={S.page}>
-            {/* NAV */}
-            <nav style={S.nav}>
-                <div style={S.navInner}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span onClick={() => navigate('/')} style={{ cursor: 'pointer', color: '#a78bfa', fontWeight: 900, fontSize: 18 }}>🎧 TechZone</span>
-                        <span style={{ color: '#334155' }}>›</span>
-                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Tìm kiếm & Lọc</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ color: '#64748b', fontSize: 13 }}>{auth.user.name || auth.user.email}</span>
-                        <button onClick={handleLogout} style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Đăng xuất</button>
-                    </div>
-                </div>
-            </nav>
+            {/* Breadcrumbs */}
+            <div style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 24px 0', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#64748b' }}>
+                <span onClick={() => navigate('/')} style={{ cursor: 'pointer', color: '#a78bfa', fontWeight: 600 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#c084fc'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#a78bfa'}
+                >🎧 TechZone</span>
+                <span>›</span>
+                <span style={{ color: '#f1f5f9', fontWeight: 600 }}>Tìm kiếm & Lọc</span>
+            </div>
 
             {/* SEARCH BAR */}
             <div style={{ background: '#1e293b', borderBottom: '1px solid #334155', padding: '20px 24px' }}>

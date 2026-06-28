@@ -412,21 +412,14 @@ const OrdersPage = () => {
 
     return (
         <div style={pageStyle}>
-            {/* Header / Breadcrumb */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,23,42,.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #1e293b', padding: '0 24px' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#64748b' }}>
-                        <span onClick={() => navigate('/')} style={{ cursor: 'pointer', color: '#a78bfa', fontWeight: 700 }}>🎧 TechZone</span>
-                        <span>›</span>
-                        <span style={{ color: '#f1f5f9', fontWeight: 600 }}>Lịch sử Đơn hàng</span>
-                    </div>
-                    <Button 
-                        onClick={() => navigate('/')}
-                        style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                        Quay lại mua sắm
-                    </Button>
-                </div>
+            {/* Breadcrumbs */}
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 24px 0', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#64748b' }}>
+                <span onClick={() => navigate('/')} style={{ cursor: 'pointer', color: '#a78bfa', fontWeight: 600 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#c084fc'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#a78bfa'}
+                >🎧 TechZone</span>
+                <span>›</span>
+                <span style={{ color: '#f1f5f9', fontWeight: 600 }}>Lịch sử Đơn hàng</span>
             </div>
 
             <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>

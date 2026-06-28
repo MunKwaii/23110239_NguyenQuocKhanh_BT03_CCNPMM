@@ -7,6 +7,10 @@
     padding: 0;
 }
 
+html, body {
+    background-color: #0f172a !important;
+}
+
 /* Fallback grid layout if Tailwind styles fail to load */
 .product-grid {
     display: grid;

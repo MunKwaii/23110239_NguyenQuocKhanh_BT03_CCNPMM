@@ -282,53 +282,7 @@ const HomePage = () => {
     /* ── MAIN ── */
     return (
         <div style={S.page}>
-            {/* NAV */}
-            <nav style={S.nav}>
-                <div style={S.navInner}>
-                    <div style={S.logo} onClick={() => navigate('/')}>
-                        <div style={S.logoIcon}>🎧</div>
-                        <span style={S.logoText}>TechZone</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <button onClick={() => navigate('/categories')}
-                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
-                        >
-                            📁 Danh mục
-                        </button>
-                        <button onClick={() => navigate('/search')}
-                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
-                        >
-                            🔍 Tìm kiếm
-                        </button>
-                        <button onClick={() => navigate('/cart')}
-                            style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: 12, padding: '8px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#a78bfa'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
-                        >
-                            🛒 Giỏ hàng ({cartCount})
-                        </button>
-                        <div style={S.userPill}>
-                            <div style={S.avatar}>{(auth.user.name || auth.user.email || 'U').charAt(0).toUpperCase()}</div>
-                            <div>
-                                <div style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 700 }}>{auth.user.name || 'Member'}</div>
-                                <div style={{ color: '#a78bfa', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{auth.user.role || 'USER'}</div>
-                            </div>
-                        </div>
-                        <button
-                            style={S.logoutBtn}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#f87171'; }}
-                            onClick={handleLogout}
-                        >
-                            Đăng xuất
-                        </button>
-                    </div>
-                </div>
-            </nav>
+            {/* Main content */}
 
             <main style={S.main}>
 
